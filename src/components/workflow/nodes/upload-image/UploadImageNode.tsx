@@ -5,6 +5,8 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { UploadImageNodeData } from "./upload-image-node.types";
 import { useWorkflowEditorStore } from "@/stores/workflow-editor.store";
 import NodeMenu from "@/components/workflow/common/NodeMenu";
+import { useWorkflowTheme } from "@/hooks/workflow/useWorkFlowUi";
+
 const ACCEPT = ".jpg,.jpeg,.png,.webp,.gif";
 
 type TransloaditSignResponse = {
@@ -58,12 +60,74 @@ function extractImageUrl(data: TransloaditAssemblyResponse) {
 const UploadImageNodeComponent = ({ id, data, selected }: NodeProps) => {
   const nodeData = data as UploadImageNodeData;
   const updateNodeData = useWorkflowEditorStore((state) => state.updateNodeData);
+  const removeNode = useWorkflowEditorStore((state) => state.removeNode);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const { isDark } = useWorkflowTheme();
+
+  const containerClass = isDark
+    ? selected
+      ? "min-w-[320px] max-w-[360px] overflow-hidden rounded-[28px] border border-white/10 bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] ring-2 ring-white/10 transition"
+      : "min-w-[320px] max-w-[360px] overflow-hidden rounded-[28px] border border-white/10 bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] transition"
+    : selected
+    ? "min-w-[320px] max-w-[360px] overflow-hidden rounded-[28px] border border-[#e7e7e7] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] ring-2 ring-black/5 transition"
+    : "min-w-[320px] max-w-[360px] overflow-hidden rounded-[28px] border border-[#ececec] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] transition";
+
+  const headerClass = isDark
+    ? "flex items-start justify-between border-b border-white/10 px-4 py-3 bg-[#111111]"
+    : "flex items-start justify-between border-b border-[#f0f0f0] px-4 py-3 bg-white";
+
+  const bodyClass = isDark
+    ? "space-y-3 px-4 py-3 bg-[#1a1a1a]"
+    : "space-y-3 px-4 py-3 bg-[#fcfcfc]";
+
+  const mutedLabelClass = isDark
+    ? "text-xs font-medium uppercase tracking-[0.2em] text-zinc-400"
+    : "text-xs font-medium uppercase tracking-[0.2em] text-zinc-500";
+
+  const titleClass = isDark
+    ? "mt-1 text-sm font-semibold text-white"
+    : "mt-1 text-sm font-semibold text-zinc-800";
+
+  const uploadButtonClass = isDark
+    ? "flex h-[260px] w-full items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-4 text-center transition hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-60"
+    : "flex h-[260px] w-full items-center justify-center rounded-2xl border border-dashed border-[#d4d4d8] bg-white px-4 text-center transition hover:bg-[#f8f8f8] disabled:cursor-not-allowed disabled:opacity-60";
+
+  const uploadTitleClass = isDark
+    ? "text-sm font-medium text-white"
+    : "text-sm font-medium text-zinc-800";
+
+  const uploadSubtitleClass = isDark
+    ? "mt-2 text-xs text-zinc-500"
+    : "mt-2 text-xs text-zinc-500";
+
+  const previewBoxClass = isDark
+    ? "overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
+    : "overflow-hidden rounded-2xl border border-[#ececec] bg-white";
+
+  const fileInfoClass = isDark
+    ? "rounded-2xl border border-white/10 bg-white/[0.03] p-3"
+    : "rounded-2xl border border-[#ececec] bg-white p-3";
+
+  const fileNameClass = isDark
+    ? "truncate text-sm text-zinc-200"
+    : "truncate text-sm text-zinc-800";
+
+  const fileUrlClass = "mt-1 break-all text-xs text-zinc-500";
+
+  const replaceButtonClass = isDark
+    ? "rounded-2xl border border-white/10 bg-[#0d0d0d] px-3 py-2 text-sm text-white transition hover:bg-[#141414]"
+    : "rounded-2xl border border-[#ececec] bg-white px-3 py-2 text-sm text-zinc-800 transition hover:bg-[#f5f5f5]";
+
+  const errorClass = isDark ? "text-xs text-red-400" : "text-xs text-red-500";
+
+  const sourceHandleClass = isDark
+    ? "!h-4 !w-4 !border-[3px] !border-[#16381f] !bg-[#22c55e] shadow-[0_0_0_4px_rgba(34,197,94,0.18)]"
+    : "!h-4 !w-4 !border-[3px] !border-[#dcfce7] !bg-[#22c55e] shadow-[0_0_0_4px_rgba(34,197,94,0.14)]";
 
   const handlePickFile = () => {
     inputRef.current?.click();
   };
-const removeNode = useWorkflowEditorStore((state) => state.removeNode);
+
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -86,8 +150,7 @@ const removeNode = useWorkflowEditorStore((state) => state.removeNode);
         throw new Error(text || "Failed to get Transloadit signature.");
       }
 
-      const signedData =
-        (await signRes.json()) as TransloaditSignResponse;
+      const signedData = (await signRes.json()) as TransloaditSignResponse;
 
       const formData = new FormData();
       formData.append("params", JSON.stringify(signedData.params));
@@ -104,8 +167,7 @@ const removeNode = useWorkflowEditorStore((state) => state.removeNode);
         throw new Error(text || "Transloadit upload failed.");
       }
 
-      const assembly =
-        (await uploadRes.json()) as TransloaditAssemblyResponse;
+      const assembly = (await uploadRes.json()) as TransloaditAssemblyResponse;
 
       const imageUrl = extractImageUrl(assembly);
 
@@ -133,94 +195,80 @@ const removeNode = useWorkflowEditorStore((state) => state.removeNode);
     }
   };
 
-return (
-  <div
-    className={`min-w-[320px] max-w-[360px] rounded-2xl border shadow-xl transition ${
-      selected
-        ? "border-white/20 bg-[#050505] ring-2 ring-white/10"
-        : "border-white/10 bg-black/90"
-    }`}
-  >
-    <div className="flex items-start justify-between border-b border-white/10 px-4 py-3">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
-          Image Input
-        </p>
-        <p className="mt-1 text-sm font-semibold text-white">
-          {nodeData.label || "Upload Image"}
-        </p>
+  return (
+    <div className={containerClass}>
+      <div className={headerClass}>
+        <div>
+          <p className={mutedLabelClass}>Image Input</p>
+          <p className={titleClass}>{nodeData.label || "Upload Image"}</p>
+        </div>
+
+        <NodeMenu onDelete={() => removeNode(id)} />
       </div>
 
-      <NodeMenu onDelete={() => removeNode(id)} />
-    </div>
+      <div className={bodyClass}>
+        <input
+          ref={inputRef}
+          type="file"
+          accept={ACCEPT}
+          onChange={handleFileChange}
+          className="hidden"
+        />
 
-    <div className="space-y-3 px-4 py-3">
-      <input
-        ref={inputRef}
-        type="file"
-        accept={ACCEPT}
-        onChange={handleFileChange}
-        className="hidden"
-      />
-
-      {!nodeData.imageUrl ? (
-        <button
-          type="button"
-          onClick={handlePickFile}
-          disabled={!!nodeData.isUploading}
-          className="flex h-[260px] w-full items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-4 text-center transition hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <div>
-            <p className="text-sm font-medium text-white">
-              {nodeData.isUploading ? "Uploading image..." : "Choose image"}
-            </p>
-            <p className="mt-2 text-xs text-zinc-500">
-              JPG, JPEG, PNG, WEBP, GIF
-            </p>
-          </div>
-        </button>
-      ) : (
-        <div className="space-y-3">
-          <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
-            <img
-              src={nodeData.imageUrl}
-              alt={nodeData.fileName || "Uploaded image"}
-              className="h-auto max-h-[260px] w-full object-contain"
-            />
-          </div>
-
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-            <p className="truncate text-sm text-zinc-200">
-              {nodeData.fileName || "Uploaded image"}
-            </p>
-            <p className="mt-1 break-all text-xs text-zinc-500">
-              {nodeData.imageUrl}
-            </p>
-          </div>
-
+        {!nodeData.imageUrl ? (
           <button
             type="button"
             onClick={handlePickFile}
-            className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white transition hover:bg-white/[0.06]"
+            disabled={!!nodeData.isUploading}
+            className={uploadButtonClass}
           >
-            Replace image
+            <div>
+              <p className={uploadTitleClass}>
+                {nodeData.isUploading ? "Uploading image..." : "Choose image"}
+              </p>
+              <p className={uploadSubtitleClass}>
+                JPG, JPEG, PNG, WEBP, GIF
+              </p>
+            </div>
           </button>
-        </div>
-      )}
+        ) : (
+          <div className="space-y-3">
+            <div className={previewBoxClass}>
+              <img
+                src={nodeData.imageUrl}
+                alt={nodeData.fileName || "Uploaded image"}
+                className="h-auto max-h-[260px] w-full object-contain"
+              />
+            </div>
 
-      {nodeData.error ? (
-        <p className="text-xs text-red-400">{nodeData.error}</p>
-      ) : null}
+            <div className={fileInfoClass}>
+              <p className={fileNameClass}>
+                {nodeData.fileName || "Uploaded image"}
+              </p>
+              <p className={fileUrlClass}>{nodeData.imageUrl}</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handlePickFile}
+              className={replaceButtonClass}
+            >
+              Replace image
+            </button>
+          </div>
+        )}
+
+        {nodeData.error ? <p className={errorClass}>{nodeData.error}</p> : null}
+      </div>
+
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="image-url-output"
+        className={sourceHandleClass}
+      />
     </div>
-
-    <Handle
-      type="source"
-      position={Position.Right}
-      id="image-url-output"
-      className="!h-3 !w-3 !border !border-white/20 !bg-zinc-400"
-    />
-  </div>
-);
+  );
 };
 
 const UploadImageNode = memo(UploadImageNodeComponent);

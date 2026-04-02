@@ -31,9 +31,18 @@ type WorkflowEditorState = {
 
   history: WorkflowSnapshot[];
   future: WorkflowSnapshot[];
+  historyRefreshKey: number;
 
   setNodes: (nodes: WorkflowNode[]) => void;
   setEdges: (edges: WorkflowEdge[]) => void;
+  replaceWorkflow: (payload: {
+    nodes: WorkflowNode[];
+    edges: WorkflowEdge[];
+    workflowId?: string;
+  }) => void;
+  resetWorkflow: () => void;
+  bumpHistoryRefreshKey: () => void;
+  patchNodeData: (nodeId: string, patch: Record<string, unknown>) => void;
 
   onNodesChange: (changes: NodeChange<WorkflowNode>[]) => void;
   onEdgesChange: (changes: EdgeChange<WorkflowEdge>[]) => void;
@@ -52,7 +61,8 @@ type WorkflowEditorState = {
   removeEdge: (edgeId: string) => void;
   removeSelectedElements: () => void;
   clearCanvas: () => void;
-
+currentWorkflowId?: string;
+setCurrentWorkflowId: (id?: string) => void;
   undo: () => void;
   redo: () => void;
   canUndo: () => boolean;
@@ -105,6 +115,7 @@ export const useWorkflowEditorStore = create<WorkflowEditorState>()(
 
       history: [],
       future: [],
+      historyRefreshKey: 0,
 
       setNodes: (nodes) =>
         set((state) => ({
@@ -116,6 +127,51 @@ export const useWorkflowEditorStore = create<WorkflowEditorState>()(
         set((state) => ({
           ...pushHistory(state),
           edges,
+        })),
+      replaceWorkflow: ({ nodes, edges, workflowId }) =>
+        set(() => ({
+          nodes,
+          edges,
+          history: [],
+          future: [],
+          historyRefreshKey: 0,
+          currentWorkflowId: workflowId,
+        })),
+
+      resetWorkflow: () =>
+        set(() => ({
+          nodes: [],
+          edges: [],
+          history: [],
+          future: [],
+          historyRefreshKey: 0,
+          currentWorkflowId: undefined,
+        })),
+
+      bumpHistoryRefreshKey: () =>
+        set((state) => ({
+          historyRefreshKey: state.historyRefreshKey + 1,
+        })),
+
+      currentWorkflowId: undefined,
+
+      setCurrentWorkflowId: (id) =>
+        set(() => ({
+          currentWorkflowId: id,
+        })),
+      patchNodeData: (nodeId, patch) =>
+        set((state) => ({
+          nodes: state.nodes.map((node) =>
+            node.id !== nodeId
+              ? node
+              : {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    ...patch,
+                  },
+                }
+          ),
         })),
 
       onNodesChange: (changes) =>
@@ -272,12 +328,14 @@ export const useWorkflowEditorStore = create<WorkflowEditorState>()(
     {
       name: "workflow-editor-store",
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        nodes: state.nodes,
-        edges: state.edges,
-        history: state.history,
-        future: state.future,
-      }),
+     partialize: (state) => ({
+  nodes: state.nodes,
+  edges: state.edges,
+  history: state.history,
+  future: state.future,
+  historyRefreshKey: state.historyRefreshKey,
+  currentWorkflowId: state.currentWorkflowId,
+}),
     }
   )
 );

@@ -10,6 +10,8 @@ import { useGeminiModels } from "@/hooks/gemini/useGeminiModels";
 import ModelSelector from "./ModelSelector";
 import ConnectedField from "@/components/workflow/common/ConnectedField";
 import NodeMenu from "@/components/workflow/common/NodeMenu";
+import { useWorkflowExecution } from "@/hooks/workflow/useWorkFlowExecution";
+import { useWorkflowTheme } from "@/hooks/workflow/useWorkFlowUi";
 
 function parseImageUrls(value: string) {
   return value
@@ -23,10 +25,12 @@ const RunAnyLlmNodeComponent = ({ id, data, selected }: NodeProps) => {
   const updateNodeData = useWorkflowEditorStore(
     (state) => state.updateNodeData
   );
-
+  const { runNode } = useWorkflowExecution();
   const resolvedInputs = useResolvedNodeInputs(id);
   const connectedHandles = useConnectedInputHandles(id);
-const removeNode = useWorkflowEditorStore((state) => state.removeNode);
+  const removeNode = useWorkflowEditorStore((state) => state.removeNode);
+  const { isDark } = useWorkflowTheme();
+
   const {
     models,
     isLoading: isLoadingModels,
@@ -167,25 +171,77 @@ const removeNode = useWorkflowEditorStore((state) => state.removeNode);
   const selectedModel = models.find((model) => model.id === nodeData.model);
   const isSelectedModelDisabled = !!selectedModel?.disabled;
 
-  const disabledInputClass =
-    "bg-white/[0.02] text-zinc-500 placeholder:text-zinc-600 opacity-70 cursor-not-allowed";
+  const containerClass = isDark
+    ? nodeData.isProcessing
+      ? "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-indigo-400/40 bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] ring-2 ring-indigo-400/20 transition"
+      : selected
+      ? "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-white/10 bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] ring-2 ring-white/10 transition"
+      : "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-white/10 bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] transition"
+    : nodeData.isProcessing
+    ? "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-indigo-200 bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] ring-2 ring-indigo-100 transition"
+    : selected
+    ? "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-[#e7e7e7] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] ring-2 ring-black/5 transition"
+    : "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-[#ececec] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] transition";
+
+  const headerClass = isDark
+    ? "flex items-start justify-between border-b border-white/10 px-4 py-3 bg-[#111111]"
+    : "flex items-start justify-between border-b border-[#f0f0f0] px-4 py-3 bg-white";
+
+  const bodyClass = isDark
+    ? "space-y-3 px-4 py-3 bg-[#1a1a1a]"
+    : "space-y-3 px-4 py-3 bg-[#fcfcfc]";
+
+  const mutedLabelClass = isDark
+    ? "text-xs font-medium uppercase tracking-[0.2em] text-zinc-400"
+    : "text-xs font-medium uppercase tracking-[0.2em] text-zinc-500";
+
+  const titleClass = isDark
+    ? "mt-1 text-sm font-semibold text-white"
+    : "mt-1 text-sm font-semibold text-zinc-800";
+
+  const baseTextareaClass = isDark
+    ? "w-full resize-none rounded-2xl border border-white/10 bg-[#0d0d0d] px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-500"
+    : "w-full resize-none rounded-2xl border border-[#ececec] bg-white px-3 py-2 text-sm text-zinc-800 outline-none placeholder:text-zinc-400";
+
+  const disabledTextareaClass = isDark
+    ? "w-full resize-none rounded-2xl border border-white/8 bg-white/[0.02] px-3 py-2 text-sm text-zinc-500 outline-none placeholder:text-zinc-600 opacity-70 cursor-not-allowed"
+    : "w-full resize-none rounded-2xl border border-[#ececec] bg-[#f5f5f5] px-3 py-2 text-sm text-zinc-400 outline-none placeholder:text-zinc-400 opacity-80 cursor-not-allowed";
+
+  const buttonClass = isDark
+    ? "w-full rounded-2xl border border-white/10 bg-[#0d0d0d] px-3 py-2 text-sm text-white transition hover:bg-[#141414] disabled:cursor-not-allowed disabled:opacity-60"
+    : "w-full rounded-2xl border border-[#ececec] bg-white px-3 py-2 text-sm text-zinc-800 transition hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-60";
+
+  const runningTextClass = isDark
+    ? "text-xs text-indigo-300"
+    : "text-xs text-indigo-600";
+
+  const responseBoxClass = isDark
+    ? "rounded-2xl border border-white/10 bg-white/[0.03] p-3 nodrag nopan"
+    : "rounded-2xl border border-[#ececec] bg-white p-3 nodrag nopan";
+
+  const responseLabelClass = isDark
+    ? "mb-2 text-xs text-zinc-400"
+    : "mb-2 text-xs text-zinc-500";
+
+  const responseTextClass = isDark
+    ? "whitespace-pre-wrap break-words text-sm leading-6 text-zinc-200"
+    : "whitespace-pre-wrap break-words text-sm leading-6 text-zinc-700";
+
+  const modelsErrorClass = isDark ? "text-xs text-red-400" : "text-xs text-red-500";
+  const errorClass = isDark ? "text-xs text-red-400" : "text-xs text-red-500";
+
+  const handleClass = isDark
+    ? "!h-4 !w-4 !border-[3px] !border-[#16381f] !bg-[#22c55e] shadow-[0_0_0_4px_rgba(34,197,94,0.18)]"
+    : "!h-4 !w-4 !border-[3px] !border-[#dcfce7] !bg-[#22c55e] shadow-[0_0_0_4px_rgba(34,197,94,0.14)]";
 
   return (
-    <div
-      className={`min-w-[340px] max-w-[420px] rounded-2xl border shadow-xl transition ${
-        nodeData.isProcessing
-          ? "border-indigo-400/40 bg-[#050505] ring-2 ring-indigo-400/20 animate-pulse"
-          : selected
-          ? "border-white/20 bg-[#050505] ring-2 ring-white/10"
-          : "border-white/10 bg-black/90"
-      }`}
-    >
+    <div className={containerClass}>
       <Handle
         type="target"
         position={Position.Left}
         id="system_prompt"
         style={{ top: "24%" }}
-        className="!h-3 !w-3 !border !border-white/20 !bg-zinc-500"
+        className={handleClass}
       />
 
       <Handle
@@ -193,7 +249,7 @@ const removeNode = useWorkflowEditorStore((state) => state.removeNode);
         position={Position.Left}
         id="user_message"
         style={{ top: "50%" }}
-        className="!h-3 !w-3 !border !border-white/20 !bg-zinc-400"
+        className={handleClass}
       />
 
       <Handle
@@ -201,23 +257,19 @@ const removeNode = useWorkflowEditorStore((state) => state.removeNode);
         position={Position.Left}
         id="images"
         style={{ top: "76%" }}
-        className="!h-3 !w-3 !border !border-white/20 !bg-zinc-300"
+        className={handleClass}
       />
 
-      <div className="flex items-start justify-between border-b border-white/10 px-4 py-3">
-  <div>
-    <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
-      LLM
-    </p>
-    <p className="mt-1 text-sm font-semibold text-white">
-      {nodeData.label || "Run Any LLM"}
-    </p>
-  </div>
+      <div className={headerClass}>
+        <div>
+          <p className={mutedLabelClass}>LLM</p>
+          <p className={titleClass}>{nodeData.label || "Run Any LLM"}</p>
+        </div>
 
-  <NodeMenu onDelete={() => removeNode(id)} />
-</div>
+        <NodeMenu onRun={() => runNode(id)} onDelete={() => removeNode(id)} />
+      </div>
 
-      <div className="space-y-3 px-4 py-3">
+      <div className={bodyClass}>
         <ConnectedField label="Model" connected={false}>
           <div
             className="nodrag nopan"
@@ -233,9 +285,7 @@ const removeNode = useWorkflowEditorStore((state) => state.removeNode);
           </div>
         </ConnectedField>
 
-        {modelsError ? (
-          <p className="text-xs text-red-400">{modelsError}</p>
-        ) : null}
+        {modelsError ? <p className={modelsErrorClass}>{modelsError}</p> : null}
 
         <ConnectedField
           label="System Prompt"
@@ -253,11 +303,11 @@ const removeNode = useWorkflowEditorStore((state) => state.removeNode);
                 ? "Value comes from connected node"
                 : "Optional system instructions..."
             }
-            className={`w-full resize-none rounded-xl border border-white/10 px-3 py-2 text-sm outline-none placeholder:text-zinc-500 ${
+            className={
               hasConnectedSystemPrompt
-                ? disabledInputClass
-                : "bg-white/[0.04] text-white"
-            }`}
+                ? disabledTextareaClass
+                : baseTextareaClass
+            }
           />
         </ConnectedField>
 
@@ -277,11 +327,11 @@ const removeNode = useWorkflowEditorStore((state) => state.removeNode);
                 ? "Value comes from connected node"
                 : "Required user message..."
             }
-            className={`w-full resize-none rounded-xl border border-white/10 px-3 py-2 text-sm outline-none placeholder:text-zinc-500 ${
+            className={
               hasConnectedUserMessage
-                ? disabledInputClass
-                : "bg-white/[0.04] text-white"
-            }`}
+                ? disabledTextareaClass
+                : baseTextareaClass
+            }
           />
         </ConnectedField>
 
@@ -301,11 +351,11 @@ const removeNode = useWorkflowEditorStore((state) => state.removeNode);
                 ? "Images come from connected node(s)"
                 : "Optional image URLs..."
             }
-            className={`w-full resize-none rounded-xl border border-white/10 px-3 py-2 text-sm outline-none placeholder:text-zinc-500 ${
+            className={
               hasConnectedImages
-                ? disabledInputClass
-                : "bg-white/[0.04] text-white"
-            }`}
+                ? disabledTextareaClass
+                : baseTextareaClass
+            }
           />
         </ConnectedField>
 
@@ -318,22 +368,22 @@ const removeNode = useWorkflowEditorStore((state) => state.removeNode);
             !nodeData.model ||
             isSelectedModelDisabled
           }
-          className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-60"
+          className={buttonClass}
         >
           {nodeData.isProcessing ? "Running..." : "Run LLM"}
         </button>
 
         {nodeData.runId && nodeData.isProcessing ? (
-          <p className="text-xs text-indigo-300">Running LLM task...</p>
+          <p className={runningTextClass}>Running LLM task...</p>
         ) : null}
 
         {nodeData.outputText ? (
           <div
-            className="rounded-xl border border-white/10 bg-white/[0.03] p-3 nodrag nopan"
+            className={responseBoxClass}
             onMouseDown={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
           >
-            <div className="mb-2 text-xs text-zinc-400">Response</div>
+            <div className={responseLabelClass}>Response</div>
 
             <div
               className="max-h-56 overflow-y-auto overscroll-contain pr-1 nodrag nopan"
@@ -345,23 +395,19 @@ const removeNode = useWorkflowEditorStore((state) => state.removeNode);
                 e.currentTarget.scrollTop += e.deltaY;
               }}
             >
-              <p className="whitespace-pre-wrap break-words text-sm leading-6 text-zinc-200">
-                {nodeData.outputText}
-              </p>
+              <p className={responseTextClass}>{nodeData.outputText}</p>
             </div>
           </div>
         ) : null}
 
-        {nodeData.error ? (
-          <p className="text-xs text-red-400">{nodeData.error}</p>
-        ) : null}
+        {nodeData.error ? <p className={errorClass}>{nodeData.error}</p> : null}
       </div>
 
       <Handle
         type="source"
         position={Position.Right}
         id="output"
-        className="!h-3 !w-3 !border !border-white/20 !bg-zinc-400"
+        className={handleClass}
       />
     </div>
   );

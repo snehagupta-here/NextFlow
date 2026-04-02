@@ -1,28 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { tasks } from "@trigger.dev/sdk/v3";
 import type { runAnyLlmTask } from "@/trigger/run-any-llm";
+import { validateBody } from "@/lib/api/zod-validation";
+import { runAnyLlmBodySchema } from "@/lib/api/workflow-schemas";
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
+  const bodyResult = await validateBody(request, runAnyLlmBodySchema);
+  if (!bodyResult.success) return bodyResult.response;
+
+  const { model, systemPrompt, userMessage, imageUrls } = bodyResult.data;
+
   try {
-    const body = await request.json();
-
-   const model =
-  typeof body.model === "string" && body.model.trim()
-    ? body.model.trim()
-    : "gemini-2.5-flash";
-    const systemPrompt =
-      typeof body.systemPrompt === "string" ? body.systemPrompt : "";
-    const userMessage =
-      typeof body.userMessage === "string" ? body.userMessage : "";
-    const imageUrls = Array.isArray(body.imageUrls) ? body.imageUrls : [];
-
-    if (!userMessage.trim()) {
-      return NextResponse.json(
-        { error: "User message is required." },
-        { status: 400 }
-      );
-    }
-
     const handle = await tasks.trigger<typeof runAnyLlmTask>(
       "run-any-llm-task",
       {

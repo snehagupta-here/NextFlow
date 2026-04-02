@@ -1,6 +1,18 @@
 import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+
+const workflowThemeInitScript = `
+  try {
+    var raw = localStorage.getItem("workflow-ui-store");
+    var parsed = raw ? JSON.parse(raw) : null;
+    var theme = parsed && parsed.state && parsed.state.theme;
+    if (theme === "light" || theme === "dark") {
+      document.documentElement.setAttribute("data-workflow-theme", theme);
+    }
+  } catch (error) {}
+`;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,11 +35,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
-    </html>
+    <ClerkProvider>
+      <html
+        lang="en"
+        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+        suppressHydrationWarning
+      >
+        <head>
+          <script dangerouslySetInnerHTML={{ __html: workflowThemeInitScript }} />
+        </head>
+        <body className="min-h-full flex flex-col">{children}</body>
+      </html>
+    </ClerkProvider>
   );
 }

@@ -2,110 +2,92 @@
 
 import React from "react";
 import {
-  Undo2,
-  Redo2,
   Lock,
   Unlock,
+  Save,
+  Play,
+  ListChecks,
+  Moon,
+  Sun,
 } from "lucide-react";
 
 type FlowControlsProps = {
   isDark: boolean;
   isCanvasLocked: boolean;
-  canUndo: boolean;
-  canRedo: boolean;
-  onUndo: () => void;
-  onRedo: () => void;
+  isSaving: boolean;
+  hasWorkflowId: boolean;
+
+  onRunSelected: () => void | Promise<void>;
+  onRunAll: () => void | Promise<void>;
+  onSaveWorkflow: () => void | Promise<void>;
   onToggleCanvasLock: () => void;
-  onAddTextNode: () => void;
-  onAddImageNode: () => void;
-  onAddVideoNode: () => void;
-  onAddCropImageNode: () => void;
-  onAddExtractFrameNode: () => void;
-  onAddRunAnyLlmNode: () => void;
   onToggleTheme: () => void;
 };
 
 const FlowControls = ({
   isDark,
   isCanvasLocked,
-  canUndo,
-  canRedo,
-  onUndo,
-  onRedo,
+  isSaving,
+  hasWorkflowId,
+  onRunSelected,
+  onRunAll,
+  onSaveWorkflow,
   onToggleCanvasLock,
-  onAddTextNode,
-  onAddImageNode,
-  onAddVideoNode,
-  onAddCropImageNode,
-  onAddExtractFrameNode,
-  onAddRunAnyLlmNode,
   onToggleTheme,
 }: FlowControlsProps) => {
-  const buttonClass = `inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-medium transition shadow-xl backdrop-blur ${
+  const pillButtonClass = `inline-flex h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-medium transition shadow-xl backdrop-blur ${
     isDark
-      ? "border-white/10 bg-black/90 text-zinc-100 hover:bg-[#0a0a0a]"
-      : "border-zinc-300 bg-white/90 text-zinc-900 hover:bg-zinc-50"
+      ? "border-white/10 bg-black/90 text-zinc-100 hover:bg-[#101010]"
+      : "border-zinc-200 bg-white/95 text-zinc-900 hover:bg-zinc-100"
+  }`;
+
+  const iconButtonClass = `inline-flex h-10 w-10 items-center justify-center rounded-[16px] border transition shadow-xl backdrop-blur ${
+    isDark
+      ? "border-white/10 bg-[#121212] text-white hover:bg-[#1a1a1a]"
+      : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 shadow-[0_10px_30px_rgba(0,0,0,0.10)]"
   }`;
 
   const disabledClass = "disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <button
-        type="button"
-        onClick={onUndo}
-        disabled={!canUndo}
-        className={`${buttonClass} ${disabledClass}`}
-      >
-        <Undo2 size={16} />
-        Undo
+    <div className="flex max-w-[720px] flex-wrap items-center justify-end gap-3">
+      <button type="button" onClick={onRunSelected} className={pillButtonClass}>
+        <ListChecks size={16} />
+        Run Selected
+      </button>
+
+      <button type="button" onClick={onRunAll} className={pillButtonClass}>
+        <Play size={16} />
+        Run All
       </button>
 
       <button
         type="button"
-        onClick={onRedo}
-        disabled={!canRedo}
-        className={`${buttonClass} ${disabledClass}`}
+        onClick={onSaveWorkflow}
+        disabled={isSaving}
+        className={`${pillButtonClass} ${disabledClass}`}
       >
-        <Redo2 size={16} />
-        Redo
+        <Save size={16} />
+        {isSaving ? "Saving..." : "Save Workflow"}
       </button>
 
-      <button type="button" onClick={onToggleCanvasLock} className={buttonClass}>
+      <button
+        type="button"
+        onClick={onToggleCanvasLock}
+        className={pillButtonClass}
+      >
         {isCanvasLocked ? <Lock size={16} /> : <Unlock size={16} />}
-        {isCanvasLocked ? "Canvas Locked" : "Canvas Unlocked"}
-      </button>
-
-      <button type="button" onClick={onAddTextNode} className={buttonClass}>
-        Add Text Node
-      </button>
-
-      <button type="button" onClick={onAddImageNode} className={buttonClass}>
-        Add Image Node
-      </button>
-
-      <button type="button" onClick={onAddVideoNode} className={buttonClass}>
-        Add Video Node
-      </button>
-
-      <button type="button" onClick={onAddCropImageNode} className={buttonClass}>
-        Add Crop Image Node
+        {isCanvasLocked ? "Locked" : "Unlocked"}
       </button>
 
       <button
         type="button"
-        onClick={onAddExtractFrameNode}
-        className={buttonClass}
+        onClick={onToggleTheme}
+        className={iconButtonClass}
+        aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+        title={isDark ? "Switch to light mode" : "Switch to dark mode"}
       >
-        Add Extract Frame Node
-      </button>
-
-      <button type="button" onClick={onAddRunAnyLlmNode} className={buttonClass}>
-        Add LLM Node
-      </button>
-
-      <button type="button" onClick={onToggleTheme} className={buttonClass}>
-        {isDark ? "Light Mode" : "Dark Mode"}
+        {isDark ? <Sun size={16} /> : <Moon size={16} />}
       </button>
     </div>
   );

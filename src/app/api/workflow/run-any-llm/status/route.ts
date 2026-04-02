@@ -1,12 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { runs } from "@trigger.dev/sdk/v3";
+import { validateSearchParams } from "@/lib/api/zod-validation";
+import { runAnyLlmStatusQuerySchema } from "@/lib/api/workflow-schemas";
 
-function extractRunError(run: any): string {
-  if (typeof run?.error === "string") return run.error;
+function extractRunError(run: unknown): string {
+  if (!run || typeof run !== "object") return "";
 
-  if (run?.error?.message) return run.error.message;
+  const runRecord = run as {
+    error?: string | { message?: string };
+    attempts?: Array<{ error?: string | { message?: string } }>;
+  };
 
-  const attempts = Array.isArray(run?.attempts) ? run.attempts : [];
+  if (typeof runRecord.error === "string") return runRecord.error;
+  if (runRecord.error?.message) return runRecord.error.message;
+
+  const attempts = Array.isArray(runRecord.attempts) ? runRecord.attempts : [];
   const lastAttempt = attempts[attempts.length - 1];
 
   if (typeof lastAttempt?.error === "string") return lastAttempt.error;
@@ -15,18 +23,27 @@ function extractRunError(run: any): string {
   return "";
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+
+  const queryResult = validateSearchParams(
+    url.searchParams,
+    runAnyLlmStatusQuerySchema
+  );
+  if (!queryResult.success) return queryResult.response;
+
+  const { runId } = queryResult.data;
+
   try {
-    const runId = request.nextUrl.searchParams.get("runId");
-
-    if (!runId) {
-      return NextResponse.json({ error: "Missing runId." }, { status: 400 });
-    }
-
     const run = await runs.retrieve(runId);
 
     if (!run) {
-      return NextResponse.json({ error: "Run not found." }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: "Run not found.",
+        },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json({

@@ -1,0 +1,35 @@
+{
+  "configPath": "/Users/sneha/galaxy.ai/.trigger/tmp/build-qibCDb/galaxy.ai/trigger.config.mjs",
+  "customConditions": [
+  ],
+  "queues": [
+  ],
+  "runtime": "node",
+  "runtimeVersion": "18.20.8",
+  "tasks": [
+    {
+      "entryPoint": "/Users/sneha/galaxy.ai/.trigger/tmp/build-qibCDb/galaxy.ai/src/trigger/crop-image.mjs",
+      "filePath": "src/trigger/crop-image.ts",
+      "id": "crop-image-task",
+      "maxDuration": 300
+    },
+    {
+      "entryPoint": "/Users/sneha/galaxy.ai/.trigger/tmp/build-qibCDb/galaxy.ai/src/trigger/extract-frame.mjs",
+      "filePath": "src/trigger/extract-frame.ts",
+      "id": "extract-frame-task",
+      "maxDuration": 300
+    },
+    {
+      "entryPoint": "/Users/sneha/galaxy.ai/.trigger/tmp/build-qibCDb/galaxy.ai/src/trigger/run-any-llm.mjs",
+      "filePath": "src/trigger/run-any-llm.ts",
+      "id": "run-any-llm-task",
+      "maxDuration": 300
+    }
+  ],
+  "timings": {
+    "src/trigger/crop-image.ts": 45.56716698408127,
+    "src/trigger/extract-frame.ts": 1.767291009426117,
+    "src/trigger/run-any-llm.ts": 48.15758299827576
+  },
+  "workerEntryPoint": "/Users/sneha/galaxy.ai/.trigger/tmp/build-qibCDb/.npm/_npx/f51a09bd0abf5f10/node_modules/trigger.dev/dist/esm/entryPoints/dev-run-worker.mjs"
+}

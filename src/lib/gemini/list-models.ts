@@ -20,6 +20,7 @@ const PAID_OR_RESTRICTED_MODEL_IDS = new Set([
   "gemini-2.0-flash-lite",
  "gemini-2.0-flash-lite-001",
  "gemini-2.5-flash-image",
+  "gemini-2.5-flash",
   "gemini-3.1-flash-image-preview",
   "gemini-pro-latest",
   "gemini-flash-latest",
