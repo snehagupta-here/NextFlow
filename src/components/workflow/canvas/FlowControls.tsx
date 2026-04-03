@@ -16,6 +16,7 @@ type FlowControlsProps = {
   isCanvasLocked: boolean;
   isSaving: boolean;
   hasWorkflowId: boolean;
+  children?: React.ReactNode;
 
   onRunSelected: () => void | Promise<void>;
   onRunAll: () => void | Promise<void>;
@@ -34,6 +35,7 @@ const FlowControls = ({
   onSaveWorkflow,
   onToggleCanvasLock,
   onToggleTheme,
+  children,
 }: FlowControlsProps) => {
   const pillButtonClass = `inline-flex h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-medium transition shadow-xl backdrop-blur ${
     isDark
@@ -51,6 +53,8 @@ const FlowControls = ({
 
   return (
     <div className="flex max-w-[720px] flex-wrap items-center justify-end gap-3">
+      {children}
+
       <button type="button" onClick={onRunSelected} className={pillButtonClass}>
         <ListChecks size={16} />
         Run Selected

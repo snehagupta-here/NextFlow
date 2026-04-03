@@ -16,6 +16,10 @@ import "@xyflow/react/dist/style.css";
 
 import { workflowNodeTypes } from "@/lib/workflow/node-registry";
 import { getFlowTheme } from "@/lib/workflow/flow-theme";
+import {
+  createWorkflowExportDocument,
+  parseWorkflowImportDocument,
+} from "@/lib/workflow/serialization";
 import { useWorkflowGraph } from "@/hooks/workflow/useWorkFlowEditor";
 import { useWorkflowTheme } from "@/hooks/workflow/useWorkFlowUi";
 import { useWorkflowValidation } from "@/hooks/workflow/useWorkFlowValidation";
@@ -23,9 +27,11 @@ import { useWorkflowKeyboardDelete } from "@/hooks/workflow/useWorkFlowKeyboardD
 import { useWorkflowKeyboardHistory } from "@/hooks/workflow/useWorkFlowKeyboardHistory";
 import { useWorkflowHistory } from "@/hooks/workflow/useWorkFlowHistory";
 import { useWorkflowExecution } from "@/hooks/workflow/useWorkFlowExecution";
+import { useWorkflowEditorStore } from "@/stores/workflow-editor.store";
 import FlowHeader from "./FlowHeader";
 import FlowControls from "./FlowControls";
 import FlowStyles from "./FlowStyles";
+import ImportExportControls from "./ImportExportControls";
 
 type WorkflowCanvasProps = {
   workflowId?: string;
@@ -40,6 +46,7 @@ const WorkflowCanvas = ({
   const { theme, toggleTheme, isDark } = useWorkflowTheme();
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect } =
     useWorkflowGraph();
+  const replaceWorkflow = useWorkflowEditorStore((state) => state.replaceWorkflow);
   const { isValidConnection } = useWorkflowValidation();
   const { undo, redo, canUndo, canRedo } = useWorkflowHistory();
   const { runSelected, runAll } = useWorkflowExecution(workflowId);
@@ -133,6 +140,49 @@ const WorkflowCanvas = ({
       );
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleExportJson = () => {
+    try {
+      const documentData = createWorkflowExportDocument(nodes, edges);
+      const blob = new Blob([JSON.stringify(documentData, null, 2)], {
+        type: "application/json",
+      });
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+      link.href = objectUrl;
+      link.download = `workflow-${timestamp}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+      setSaveMessage("Workflow exported as JSON.");
+    } catch (error) {
+      setSaveMessage(
+        error instanceof Error ? error.message : "Failed to export workflow."
+      );
+    }
+  };
+
+  const handleImportJson = async (file: File) => {
+    try {
+      const text = await file.text();
+      const imported = parseWorkflowImportDocument(text);
+
+      replaceWorkflow({
+        nodes: imported.nodes,
+        edges: imported.edges,
+      });
+      hasInitializedAutosave.current = false;
+      lastSavedSnapshot.current = "";
+      setSaveMessage("Workflow imported. Save it to create a new record.");
+    } catch (error) {
+      setSaveMessage(
+        error instanceof Error ? error.message : "Failed to import workflow."
+      );
     }
   };
 
@@ -240,7 +290,13 @@ const WorkflowCanvas = ({
             onSaveWorkflow={handleSaveWorkflow}
             onToggleCanvasLock={() => setIsCanvasLocked((prev) => !prev)}
             onToggleTheme={toggleTheme}
-          />
+          >
+            <ImportExportControls
+              isDark={isDark}
+              onExportJson={handleExportJson}
+              onImportJson={handleImportJson}
+            />
+          </FlowControls>
         </Panel>
 
         <Panel position="bottom-left">
