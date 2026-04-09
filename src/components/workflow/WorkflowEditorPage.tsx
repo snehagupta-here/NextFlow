@@ -4,9 +4,11 @@ import React, { useEffect, useState } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { useAuth } from "@clerk/nextjs";
 import { LoaderCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
 import WorkflowCanvas from "@/components/workflow/canvas/WorkFlowCanvas";
 import LeftSideBar from "@/components/LeftSideBar";
 import RightSideBar from "@/components/RightSideBar";
+import { hydrateWorkflowDocument } from "@/lib/workflow/serialization";
 import { useWorkflowEditorStore } from "@/stores/workflow-editor.store";
 import { useWorkflowTheme } from "@/hooks/workflow/useWorkFlowUi";
 
@@ -49,9 +51,11 @@ export default function WorkflowEditorPage({
   startBlank = false,
 }: WorkflowEditorPageProps) {
   const { isLoaded, isSignedIn } = useAuth();
+  const router = useRouter();
   const currentWorkflowId = useWorkflowEditorStore(
     (state) => state.currentWorkflowId
   );
+  const hasHydratedStore = useWorkflowEditorStore((state) => state.hasHydrated);
   const setCurrentWorkflowId = useWorkflowEditorStore(
     (state) => state.setCurrentWorkflowId
   );
@@ -63,11 +67,20 @@ export default function WorkflowEditorPage({
 
   const { isDark } = useWorkflowTheme();
   const [isThemeReady, setIsThemeReady] = useState(false);
-  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
-  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
+  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(true);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const [isHydratingWorkflow, setIsHydratingWorkflow] = useState(true);
 
   const shouldStartBlank = startBlank;
+
+  const handleWorkflowSaved = (workflowId: string) => {
+    setCurrentWorkflowId(workflowId);
+
+    if (requestedWorkflowId !== workflowId || shouldStartBlank) {
+      router.replace(`/nodes/${workflowId}`);
+    }
+  };
 
   const canvasLoadingClass = isDark
     ? "flex h-full w-full items-center justify-center bg-black text-zinc-400"
@@ -81,7 +94,7 @@ export default function WorkflowEditorPage({
   }, []);
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded || !hasHydratedStore) return;
 
     const loadWorkflow = async () => {
       if (!isSignedIn) {
@@ -129,9 +142,14 @@ export default function WorkflowEditorPage({
           return;
         }
 
+        const hydratedWorkflow = hydrateWorkflowDocument({
+          nodes: workflowToLoad.nodes,
+          edges: workflowToLoad.edges,
+        });
+
         replaceWorkflow({
-          nodes: workflowToLoad.nodes ?? [],
-          edges: workflowToLoad.edges ?? [],
+          nodes: hydratedWorkflow.nodes,
+          edges: hydratedWorkflow.edges,
           workflowId: workflowToLoad.id,
           workflowName: workflowToLoad.name,
         });
@@ -145,6 +163,7 @@ export default function WorkflowEditorPage({
 
     loadWorkflow();
   }, [
+    hasHydratedStore,
     isLoaded,
     isSignedIn,
     replaceWorkflow,
@@ -157,16 +176,104 @@ export default function WorkflowEditorPage({
   if (!isThemeReady) {
     return (
       <ReactFlowProvider>
-        <div className="h-[100vh] w-[100vw] bg-background" />
+        <div className="h-dvh w-screen bg-background" />
+      </ReactFlowProvider>
+    );
+  }
+
+  if (!hasHydratedStore) {
+    return (
+      <ReactFlowProvider>
+        <div className={canvasLoadingClass}>
+          <div className={loadingPanelClass}>
+            <LoaderCircle size={18} className="animate-spin" />
+            <span className="text-sm font-medium">Loading workflow...</span>
+          </div>
+        </div>
       </ReactFlowProvider>
     );
   }
 
   return (
     <ReactFlowProvider>
-      <div className="flex h-[100vh] w-[100vw] overflow-hidden bg-background">
+      <div className="flex h-dvh w-screen flex-col overflow-hidden bg-background md:flex-row">
         <div
-          className={`relative transition-all duration-300 ease-in-out ${
+          className={`sticky top-0 z-50 flex h-[64px] w-full shrink-0 touch-pan-y items-center px-4 md:hidden ${
+            isDark ? "bg-black" : "border-b border-black/8 bg-white"
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => setIsMobileSidebarOpen((current) => !current)}
+            className={`flex h-7 w-7 items-center justify-center rounded-md bg-transparent transition ${
+              isDark
+                ? "text-zinc-400 hover:bg-zinc-800/90 hover:text-zinc-300"
+                : "text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700"
+            }`}
+            aria-label={isMobileSidebarOpen ? "Close sidebar" : "Open sidebar"}
+            title={isMobileSidebarOpen ? "Close sidebar" : "Open sidebar"}
+          >
+            <CollapseSidebarIcon collapsed={!isMobileSidebarOpen} />
+          </button>
+        </div>
+
+        <div
+          className={`fixed inset-0 z-40 md:hidden transition-opacity duration-300 ${
+            isMobileSidebarOpen
+              ? "pointer-events-auto opacity-100"
+              : "pointer-events-none opacity-0"
+          }`}
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50"
+            aria-label="Close sidebar overlay"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+          <div
+            className={`absolute left-0 top-0 h-full w-[255.5px] transition-transform duration-300 ease-out ${
+              isDark
+                ? "bg-black shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
+                : "bg-white shadow-[0_20px_60px_rgba(0,0,0,0.12)]"
+            } ${
+              isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+          >
+            <div className="sticky top-0 h-full">
+              <LeftSideBar collapsed={false} />
+            </div>
+          </div>
+        </div>
+
+        {isRightSidebarOpen ? (
+          <div className="fixed inset-x-0 bottom-0 top-[124px] z-[45] md:hidden">
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/50"
+              aria-label="Close history overlay"
+              onClick={() => setIsRightSidebarOpen(false)}
+            />
+            <div
+              className={`absolute right-0 top-0 h-full w-[280px] max-w-[85vw] rounded-tl-2xl transition-transform duration-300 ease-out ${
+                isDark
+                  ? "bg-black shadow-[-20px_0_60px_rgba(0,0,0,0.45)]"
+                  : "bg-white shadow-[-20px_0_60px_rgba(0,0,0,0.12)]"
+              } translate-x-0`}
+            >
+              <div className="sticky top-0 h-full">
+                <RightSideBar
+                  workflowId={
+                    isSignedIn && !isHydratingWorkflow ? currentWorkflowId : undefined
+                  }
+                  isSignedIn={!!isSignedIn && !isHydratingWorkflow}
+                />
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        <div
+          className={`relative hidden transition-all duration-300 ease-in-out md:block ${
             isLeftSidebarCollapsed
               ? "w-[51px] min-w-[51px]"
               : "w-[255.5px] min-w-[255.5px]"
@@ -205,7 +312,7 @@ export default function WorkflowEditorPage({
           {isHydratingWorkflow ? null : (
             <WorkflowCanvas
               workflowId={isSignedIn ? currentWorkflowId : undefined}
-              onWorkflowSaved={setCurrentWorkflowId}
+              onWorkflowSaved={handleWorkflowSaved}
               onOpenHistory={() => setIsRightSidebarOpen((prev) => !prev)}
               isHistoryOpen={isRightSidebarOpen}
               isLeftSidebarCollapsed={isLeftSidebarCollapsed}
@@ -223,7 +330,7 @@ export default function WorkflowEditorPage({
         </div>
 
         <div
-          className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          className={`hidden overflow-hidden transition-all duration-300 ease-in-out md:block ${
             isRightSidebarOpen
               ? "w-[320px] min-w-[320px]"
               : "w-0 min-w-0"

@@ -10,6 +10,7 @@ import { useGeminiModels } from "@/hooks/gemini/useGeminiModels";
 import ModelSelector from "./ModelSelector";
 import ConnectedField from "@/components/workflow/common/ConnectedField";
 import NodeMenu from "@/components/workflow/common/NodeMenu";
+import NodeHoverRunButton from "@/components/workflow/common/NodeHoverRunButton";
 import NodeRunErrorBubble from "@/components/workflow/common/NodeRunErrorBubble";
 import { useWorkflowExecution } from "@/hooks/workflow/useWorkFlowExecution";
 import { useWorkflowTheme } from "@/hooks/workflow/useWorkFlowUi";
@@ -26,7 +27,7 @@ const RunAnyLlmNodeComponent = ({ id, data, selected }: NodeProps) => {
   const updateNodeData = useWorkflowEditorStore(
     (state) => state.updateNodeData
   );
-  const { runNode } = useWorkflowExecution();
+  const { runNode, runWorkflow } = useWorkflowExecution();
   const resolvedInputs = useResolvedNodeInputs(id);
   const connectedHandles = useConnectedInputHandles(id);
   const removeNode = useWorkflowEditorStore((state) => state.removeNode);
@@ -77,113 +78,16 @@ const RunAnyLlmNodeComponent = ({ id, data, selected }: NodeProps) => {
     }
   }, [models, nodeData.model, id, updateNodeData]);
 
-  const handleRun = async () => {
-    updateNodeData(id, {
-      isProcessing: true,
-      error: "",
-      outputText: "",
-    });
-
-    try {
-      const res = await fetch("/api/workflow/run-any-llm", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: nodeData.model,
-          systemPrompt: effectiveSystemPrompt,
-          userMessage: effectiveUserMessage,
-          imageUrls: mergedImageUrls,
-        }),
-      });
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(result?.error || "Failed to start LLM task.");
-      }
-
-      updateNodeData(id, {
-        runId: result.runId ?? "",
-        isProcessing: true,
-        error: "",
-        outputText: "",
-      });
-    } catch (error) {
-      updateNodeData(id, {
-        isProcessing: false,
-        error: error instanceof Error ? error.message : "LLM execution failed.",
-      });
-    }
-  };
-
-  useEffect(() => {
-    if (!nodeData.runId || !nodeData.isProcessing) return;
-
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(
-          `/api/workflow/run-any-llm/status?runId=${nodeData.runId}`
-        );
-        const result = await res.json();
-
-        if (!res.ok) {
-          updateNodeData(id, {
-            isProcessing: false,
-            error: result?.error || "Failed to fetch LLM status.",
-          });
-          clearInterval(interval);
-          return;
-        }
-
-        if (result.status === "COMPLETED" && result.output?.outputText) {
-          updateNodeData(id, {
-            outputText: result.output.outputText,
-            isProcessing: false,
-            error: "",
-          });
-          clearInterval(interval);
-          return;
-        }
-
-        if (
-          result.status === "FAILED" ||
-          result.status === "CANCELED" ||
-          result.status === "CANCELLED" ||
-          result.status === "CRASHED" ||
-          result.status === "TIMED_OUT" ||
-          result.status === "SYSTEM_FAILURE" ||
-          result.status === "INTERRUPTED"
-        ) {
-          updateNodeData(id, {
-            isProcessing: false,
-            error: result.error || `LLM task failed (${result.status}).`,
-          });
-          clearInterval(interval);
-        }
-      } catch {
-        updateNodeData(id, {
-          isProcessing: false,
-          error: "Failed to fetch LLM status.",
-        });
-        clearInterval(interval);
-      }
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [id, nodeData.runId, nodeData.isProcessing, updateNodeData]);
-
   const selectedModel = models.find((model) => model.id === nodeData.model);
   const isSelectedModelDisabled = !!selectedModel?.disabled;
 
   const containerClass = isDark
     ? selected
-      ? "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-[#4f8cff] bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] ring-2 ring-[#4f8cff]/20 transition"
-      : "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-white/10 bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] transition"
+      ? "min-w-[340px] max-w-[420px] overflow-hidden rounded-[20px] border border-[#4f8cff] bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] ring-2 ring-[#4f8cff]/20 transition"
+      : "min-w-[340px] max-w-[420px] overflow-hidden rounded-[20px] border border-white/10 bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] transition"
     : selected
-    ? "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-[#4f8cff] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] ring-2 ring-[#4f8cff]/15 transition"
-    : "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-[#ececec] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] transition";
+    ? "min-w-[340px] max-w-[420px] overflow-hidden rounded-[20px] border border-[#4f8cff] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] ring-2 ring-[#4f8cff]/15 transition"
+    : "min-w-[340px] max-w-[420px] overflow-hidden rounded-[20px] border border-[#ececec] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] transition";
 
   const headerClass = isDark
     ? "flex items-start justify-between border-b border-white/10 px-4 py-3 bg-[#111111]"
@@ -202,12 +106,12 @@ const RunAnyLlmNodeComponent = ({ id, data, selected }: NodeProps) => {
     : "mt-1 text-sm font-semibold text-zinc-800";
 
   const baseTextareaClass = isDark
-    ? "w-full resize-none rounded-2xl border border-white/10 bg-[#0d0d0d] px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-500"
-    : "w-full resize-none rounded-2xl border border-[#ececec] bg-white px-3 py-2 text-sm text-zinc-800 outline-none placeholder:text-zinc-400";
+    ? "nodrag nopan w-full resize-none rounded-2xl border border-white/10 bg-[#0d0d0d] px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-500"
+    : "nodrag nopan w-full resize-none rounded-2xl border border-[#ececec] bg-white px-3 py-2 text-sm text-zinc-800 outline-none placeholder:text-zinc-400";
 
   const disabledTextareaClass = isDark
-    ? "w-full resize-none rounded-2xl border border-white/8 bg-white/[0.02] px-3 py-2 text-sm text-zinc-500 outline-none placeholder:text-zinc-600 opacity-70 cursor-not-allowed"
-    : "w-full resize-none rounded-2xl border border-[#ececec] bg-[#f5f5f5] px-3 py-2 text-sm text-zinc-400 outline-none placeholder:text-zinc-400 opacity-80 cursor-not-allowed";
+    ? "nodrag nopan w-full resize-none rounded-2xl border border-white/8 bg-white/[0.02] px-3 py-2 text-sm text-zinc-500 outline-none placeholder:text-zinc-600 opacity-70 cursor-not-allowed"
+    : "nodrag nopan w-full resize-none rounded-2xl border border-[#ececec] bg-[#f5f5f5] px-3 py-2 text-sm text-zinc-400 outline-none placeholder:text-zinc-400 opacity-80 cursor-not-allowed";
 
   const buttonClass = isDark
     ? "w-full rounded-2xl border border-white/10 bg-[#0d0d0d] px-3 py-2 text-sm text-white transition hover:bg-[#141414] disabled:cursor-not-allowed disabled:opacity-60"
@@ -233,11 +137,16 @@ const RunAnyLlmNodeComponent = ({ id, data, selected }: NodeProps) => {
   const errorClass = isDark ? "text-xs text-red-400" : "text-xs text-red-500";
 
   const handleClass = isDark
-    ? "!h-4 !w-4 !border-[3px] !border-[#16381f] !bg-[#22c55e] shadow-[0_0_0_4px_rgba(34,197,94,0.18)]"
-    : "!h-4 !w-4 !border-[3px] !border-[#dcfce7] !bg-[#22c55e] shadow-[0_0_0_4px_rgba(34,197,94,0.14)]";
+    ? "!h-4 !w-4 !border-[3px] !border-[#24193a] !bg-[#4e387e] shadow-[0_0_0_4px_rgba(78,56,126,0.22)]"
+    : "!h-4 !w-4 !border-[3px] !border-[#e9e2f7] !bg-[#4e387e] shadow-[0_0_0_4px_rgba(78,56,126,0.16)]";
+  const runningTargetHandleClass = nodeData.isProcessing
+    ? isDark
+      ? "workflow-handle-running-dark"
+      : "workflow-handle-running-light"
+    : "";
 
   return (
-    <div className="relative overflow-visible">
+    <div className="group relative overflow-visible">
       {nodeData.error ? (
         <NodeRunErrorBubble
           message={nodeData.error}
@@ -245,13 +154,27 @@ const RunAnyLlmNodeComponent = ({ id, data, selected }: NodeProps) => {
         />
       ) : null}
 
+      <NodeHoverRunButton
+        nodeId={id}
+        onRun={() => runNode(id)}
+        onRunWorkflow={() => runWorkflow(id, true)}
+        disabled={
+          !!nodeData.isProcessing ||
+          !effectiveUserMessage.trim() ||
+          !nodeData.model ||
+          isSelectedModelDisabled
+        }
+        isRunning={!!nodeData.isProcessing}
+        forceRunTextWhite
+      />
+
       <div className={`${containerClass} ${runningGlowClass}`}>
         <Handle
           type="target"
           position={Position.Left}
           id="system_prompt"
           style={{ top: "24%" }}
-          className={handleClass}
+          className={`${handleClass} ${runningTargetHandleClass}`}
         />
 
       <Handle
@@ -259,7 +182,7 @@ const RunAnyLlmNodeComponent = ({ id, data, selected }: NodeProps) => {
         position={Position.Left}
         id="user_message"
         style={{ top: "50%" }}
-        className={handleClass}
+        className={`${handleClass} ${runningTargetHandleClass}`}
       />
 
       <Handle
@@ -267,7 +190,7 @@ const RunAnyLlmNodeComponent = ({ id, data, selected }: NodeProps) => {
         position={Position.Left}
         id="images"
         style={{ top: "76%" }}
-        className={handleClass}
+        className={`${handleClass} ${runningTargetHandleClass}`}
       />
 
       <div className={headerClass}>
@@ -368,20 +291,6 @@ const RunAnyLlmNodeComponent = ({ id, data, selected }: NodeProps) => {
             }
           />
         </ConnectedField>
-
-        <button
-          type="button"
-          onClick={handleRun}
-          disabled={
-            !!nodeData.isProcessing ||
-            !effectiveUserMessage.trim() ||
-            !nodeData.model ||
-            isSelectedModelDisabled
-          }
-          className={buttonClass}
-        >
-          {nodeData.isProcessing ? "Running..." : "Run LLM"}
-        </button>
 
         {nodeData.runId && nodeData.isProcessing ? (
           <p className={runningTextClass}>Running LLM task...</p>

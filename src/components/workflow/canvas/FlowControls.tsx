@@ -7,7 +7,6 @@ import {
   Unlock,
   Save,
   Play,
-  ListChecks,
   ChevronLeft,
 } from "lucide-react";
 
@@ -21,7 +20,6 @@ type FlowControlsProps = {
     | React.ReactNode
     | ((helpers: { closeMenu: () => void }) => React.ReactNode);
 
-  onRunSelected: () => void | Promise<void>;
   onRunAll: () => void | Promise<void>;
   onSaveWorkflow: () => void | Promise<void>;
   onToggleCanvasLock: () => void;
@@ -33,7 +31,6 @@ const FlowControls = ({
   isSaving,
   workflowName,
   onWorkflowNameChange,
-  onRunSelected,
   onRunAll,
   onSaveWorkflow,
   onToggleCanvasLock,
@@ -53,11 +50,11 @@ const FlowControls = ({
 
   const menuTriggerClass = `inline-flex h-12 items-center gap-2 rounded-xl px-3 text-sm font-medium transition shadow-xl backdrop-blur ${
     isDark
-      ? "border-white/10 bg-[#1c1c1c] text-zinc-100"
-      : "border-zinc-200 bg-[#f3f3f3] text-zinc-900 shadow-[0_10px_30px_rgba(0,0,0,0.10)]"
+      ? "border-white/10 bg-[#202020] text-zinc-100"
+      : "border border-black/10 bg-[#f3f3f3] text-zinc-900 shadow-[0_0_0_1px_rgba(0,0,0,0.03),0_10px_30px_rgba(0,0,0,0.10)]"
   }`;
   const workflowNameButtonClass = isDark
-    ? "inline-flex h-6 max-w-[220px] items-center rounded-lg px-2 text-sm leading-none font-medium text-zinc-100 transition hover:bg-[#2a2a2a]"
+    ? "inline-flex h-6 max-w-[220px] items-center rounded-lg px-2 text-sm leading-none font-medium text-zinc-100 transition hover:bg-[#383838]"
     : "inline-flex h-6 max-w-[220px] items-center rounded-lg px-2 text-sm leading-none font-medium text-zinc-900 transition hover:bg-zinc-200/80";
   const workflowNameInputClass = isDark
     ? "h-6 w-[220px] rounded-lg border border-[0.5px] border-white/35 bg-transparent px-2 py-1 text-sm leading-none font-medium text-zinc-100 outline-none placeholder:text-zinc-500"
@@ -174,15 +171,6 @@ const FlowControls = ({
             </button>
 
             {typeof children === "function" ? children({ closeMenu }) : children}
-
-            <button
-              type="button"
-              onClick={handleAction(() => onRunSelected())}
-              className={pillButtonClass}
-            >
-              <ListChecks size={14} />
-              Run Selected
-            </button>
 
             <button
               type="button"

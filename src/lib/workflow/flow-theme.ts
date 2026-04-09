@@ -3,6 +3,7 @@ import type { ThemeMode } from "@/types/workflow";
 
 export function getFlowTheme(theme: ThemeMode) {
   const isDark = theme === "dark";
+  const edgeStroke = "#4e387e";
 
   return {
     isDark,
@@ -14,13 +15,14 @@ export function getFlowTheme(theme: ThemeMode) {
       : "rounded-2xl border border-zinc-300 bg-white/90 text-zinc-900 shadow-xl backdrop-blur",
     subtitleClass: isDark ? "text-zinc-400" : "text-zinc-500",
     edgeDefaults: {
+      animated: true,
       style: {
-        stroke: isDark ? "#71717a" : "#52525b",
-        strokeWidth: 2,
+        stroke: edgeStroke,
+        strokeWidth: 2.2,
       },
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: isDark ? "#71717a" : "#52525b",
+        color: edgeStroke,
       },
     },
     controlsClass: isDark

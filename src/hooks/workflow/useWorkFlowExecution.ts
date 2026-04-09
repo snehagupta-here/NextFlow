@@ -474,9 +474,45 @@ export function useWorkflowExecution(workflowId?: string) {
     [nodes, execute]
   );
 
+  const runWorkflow = useCallback(
+    async (nodeId: string, force = false) => {
+      if (nodes.length === 0) return;
+
+      const connectedNodeIds = new Set<string>();
+      const stack = [nodeId];
+
+      while (stack.length > 0) {
+        const current = stack.pop();
+        if (!current || connectedNodeIds.has(current)) continue;
+
+        connectedNodeIds.add(current);
+
+        for (const edge of edges) {
+          if (edge.source === current && !connectedNodeIds.has(edge.target)) {
+            stack.push(edge.target);
+          }
+
+          if (edge.target === current && !connectedNodeIds.has(edge.source)) {
+            stack.push(edge.source);
+          }
+        }
+      }
+
+      if (connectedNodeIds.size === 0) return;
+
+      await execute({
+        type: "selected",
+        nodeIds: Array.from(connectedNodeIds),
+        force,
+      });
+    },
+    [nodes.length, edges, execute]
+  );
+
   return {
     runNode,
     runSelected,
     runAll,
+    runWorkflow,
   };
 }

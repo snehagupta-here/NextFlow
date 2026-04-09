@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { useClerk, useSignIn } from "@clerk/nextjs";
+import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs";
 import { Mail, Shield, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -66,6 +66,7 @@ export default function AuthPromptModal({
 }: AuthPromptModalProps) {
   const clerk = useClerk();
   const { isLoaded, signIn } = useSignIn();
+  const { isLoaded: isSignUpLoaded, signUp } = useSignUp();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -105,19 +106,34 @@ export default function AuthPromptModal({
 
   if (!open || !isMounted) return null;
 
-  const callbackUrl = "/sso-callback";
   const redirectComplete =
     redirectUrl || searchParams.get("redirect_url") || pathname || "/nodes";
+  const callbackUrl = `/sso-callback?redirect_url=${encodeURIComponent(
+    redirectComplete
+  )}&mode=${mode}`;
   const alternateModeHref = `${
     mode === "signUp" ? "/sign-in" : "/sign-up"
   }?redirect_url=${encodeURIComponent(redirectComplete)}`;
 
   const handleOAuth = async (strategy: "oauth_google" | "oauth_apple") => {
-    if (!isLoaded || !signIn) return;
-
     setIsSubmitting(true);
 
     try {
+      if (mode === "signUp") {
+        if (!isSignUpLoaded || !signUp) return;
+
+        await signUp.authenticateWithRedirect({
+          strategy,
+          redirectUrl: callbackUrl,
+          redirectUrlComplete: redirectComplete,
+          continueSignIn: true,
+          continueSignUp: true,
+        });
+        return;
+      }
+
+      if (!isLoaded || !signIn) return;
+
       await signIn.authenticateWithRedirect({
         strategy,
         redirectUrl: callbackUrl,
@@ -222,6 +238,8 @@ export default function AuthPromptModal({
           <div className="py-4 text-center text-[12px] font-medium text-black/35">
             OR
           </div>
+
+          <div className="mb-3 min-h-[1px]" aria-hidden="true" />
 
           <label className="flex h-[50px] items-center gap-3 rounded-[16px] border border-black/15 bg-[#f3f3f3] px-4">
             <Mail size={20} className="text-black/55" />

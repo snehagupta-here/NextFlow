@@ -15,6 +15,7 @@ const FlowStyles = ({ isDark }: FlowStylesProps) => {
 
       .react-flow__panel {
         margin: 16px;
+        z-index: 60;
       }
 
       .react-flow {
@@ -120,6 +121,116 @@ const FlowStyles = ({ isDark }: FlowStylesProps) => {
         animation: workflow-node-pulse-light 1.8s ease-in-out infinite;
       }
 
+      @keyframes workflow-handle-pulse-dark {
+        0%,
+        100% {
+          background: #4e387e;
+          box-shadow:
+            0 0 0 4px rgba(78, 56, 126, 0.22),
+            0 0 10px rgba(96, 165, 250, 0.2);
+        }
+
+        50% {
+          background: rgba(96, 165, 250, 0.98);
+          box-shadow:
+            0 0 0 4px rgba(78, 56, 126, 0.28),
+            0 0 16px rgba(96, 165, 250, 0.34);
+        }
+      }
+
+      @keyframes workflow-handle-pulse-light {
+        0%,
+        100% {
+          background: #4e387e;
+          box-shadow:
+            0 0 0 4px rgba(78, 56, 126, 0.16),
+            0 0 8px rgba(59, 130, 246, 0.1);
+        }
+
+        50% {
+          background: rgba(59, 130, 246, 0.94);
+          box-shadow:
+            0 0 0 4px rgba(78, 56, 126, 0.2),
+            0 0 12px rgba(59, 130, 246, 0.22);
+        }
+      }
+
+      .workflow-handle-running-dark {
+        animation: workflow-handle-pulse-dark 1.4s ease-in-out infinite;
+      }
+
+      .workflow-handle-running-light {
+        animation: workflow-handle-pulse-light 1.4s ease-in-out infinite;
+      }
+
+      @keyframes workflow-edge-flow-dark {
+        0% {
+          stroke: rgba(96, 165, 250, 0.98);
+          stroke-width: 3px;
+          stroke-dasharray: 48 260;
+          stroke-dashoffset: 308;
+          filter:
+            drop-shadow(0 0 10px rgba(96, 165, 250, 0.42))
+            drop-shadow(0 0 18px rgba(59, 130, 246, 0.22));
+        }
+
+        100% {
+          stroke: rgba(96, 165, 250, 0.98);
+          stroke-width: 3px;
+          stroke-dasharray: 48 260;
+          stroke-dashoffset: 0;
+          filter:
+            drop-shadow(0 0 10px rgba(96, 165, 250, 0.42))
+            drop-shadow(0 0 18px rgba(59, 130, 246, 0.22));
+        }
+      }
+
+      @keyframes workflow-edge-flow-light {
+        0% {
+          stroke: rgba(59, 130, 246, 0.94);
+          stroke-width: 3px;
+          stroke-dasharray: 48 260;
+          stroke-dashoffset: 308;
+          filter:
+            drop-shadow(0 0 8px rgba(59, 130, 246, 0.26))
+            drop-shadow(0 0 14px rgba(96, 165, 250, 0.16));
+        }
+
+        100% {
+          stroke: rgba(59, 130, 246, 0.94);
+          stroke-width: 3px;
+          stroke-dasharray: 48 260;
+          stroke-dashoffset: 0;
+          filter:
+            drop-shadow(0 0 8px rgba(59, 130, 246, 0.26))
+            drop-shadow(0 0 14px rgba(96, 165, 250, 0.16));
+        }
+      }
+
+      .workflow-edge-running-dark .react-flow__edge-path,
+      .workflow-edge-running-dark .react-flow__connection-path {
+        animation: workflow-edge-flow-dark 1.15s linear infinite;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke: rgba(96, 165, 250, 0.98) !important;
+      }
+
+      .workflow-edge-running-light .react-flow__edge-path,
+      .workflow-edge-running-light .react-flow__connection-path {
+        animation: workflow-edge-flow-light 1.15s linear infinite;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke: rgba(59, 130, 246, 0.94) !important;
+      }
+
+      .workflow-edge-running-dark .react-flow__arrowhead path {
+        fill: rgba(96, 165, 250, 0.98);
+      }
+
+      .workflow-edge-running-light .react-flow__arrowhead path {
+        fill: rgba(59, 130, 246, 0.94);
+      }
+
       @keyframes workflow-selection-border-move {
         from {
           background-position:
@@ -145,13 +256,13 @@ const FlowStyles = ({ isDark }: FlowStylesProps) => {
 
       .react-flow__selection {
         background: ${isDark
-          ? "rgba(59, 130, 246, 0.08) !important"
-          : "rgba(59, 130, 246, 0.06) !important"};
+          ? "rgba(59, 130, 246, 0.04) !important"
+          : "rgba(59, 130, 246, 0.03) !important"};
         border: none !important;
         box-shadow: inset 0 0 0 1px
           ${isDark
-            ? "rgba(96, 165, 250, 0.16)"
-            : "rgba(59, 130, 246, 0.12)"} !important;
+            ? "rgba(96, 165, 250, 0.12)"
+            : "rgba(59, 130, 246, 0.09)"} !important;
         backdrop-filter: none !important;
         position: relative;
         overflow: visible !important;
@@ -159,13 +270,13 @@ const FlowStyles = ({ isDark }: FlowStylesProps) => {
 
       .react-flow__selection-rect {
         background: ${isDark
-          ? "rgba(59, 130, 246, 0.08) !important"
-          : "rgba(59, 130, 246, 0.06) !important"};
+          ? "rgba(59, 130, 246, 0.04) !important"
+          : "rgba(59, 130, 246, 0.03) !important"};
         border: none !important;
         box-shadow: inset 0 0 0 1px
           ${isDark
-            ? "rgba(96, 165, 250, 0.16)"
-            : "rgba(59, 130, 246, 0.12)"} !important;
+            ? "rgba(96, 165, 250, 0.12)"
+            : "rgba(59, 130, 246, 0.09)"} !important;
         backdrop-filter: none !important;
         position: relative;
         overflow: visible !important;
@@ -173,19 +284,16 @@ const FlowStyles = ({ isDark }: FlowStylesProps) => {
 
       .react-flow__nodesselection-rect {
         background: ${isDark
-          ? "rgba(59, 130, 246, 0.08) !important"
-          : "rgba(59, 130, 246, 0.06) !important"};
+          ? "rgba(59, 130, 246, 0.04) !important"
+          : "rgba(59, 130, 246, 0.03) !important"};
         border: none !important;
         box-shadow: inset 0 0 0 1px
           ${isDark
-            ? "rgba(96, 165, 250, 0.16)"
-            : "rgba(59, 130, 246, 0.12)"} !important;
+            ? "rgba(96, 165, 250, 0.12)"
+            : "rgba(59, 130, 246, 0.09)"} !important;
         backdrop-filter: none !important;
         position: relative;
         overflow: visible !important;
-        transform: translate(-8px, -8px);
-        width: calc(100% + 16px) !important;
-        height: calc(100% + 16px) !important;
       }
 
       .react-flow__selection::before,
@@ -233,16 +341,16 @@ const FlowStyles = ({ isDark }: FlowStylesProps) => {
         color: ${isDark ? "#e4e4e7" : "#3f3f46"};
         border: 1px solid
           ${isDark ? "rgba(255, 255, 255, 0.08)" : "#ececec"};
-        border-radius: 28px;
+        border-radius: 20px;
       }
 
       .react-flow__handle {
         width: 16px;
         height: 16px;
-        border: 3px solid ${isDark ? "#16381f" : "#dcfce7"};
-        background: #22c55e;
+        border: 3px solid ${isDark ? "#24193a" : "#e9e2f7"};
+        background: #4e387e;
         box-shadow: 0 0 0 4px
-          ${isDark ? "rgba(34, 197, 94, 0.18)" : "rgba(34, 197, 94, 0.14)"};
+          ${isDark ? "rgba(78, 56, 126, 0.22)" : "rgba(78, 56, 126, 0.16)"};
       }
 
       .react-flow__handle-bottom {

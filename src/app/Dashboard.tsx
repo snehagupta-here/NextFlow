@@ -7,6 +7,7 @@ import { LoaderCircle } from "lucide-react";
 import WorkflowCanvas from "@/components/workflow/canvas/WorkFlowCanvas";
 import LeftSideBar from "@/components/LeftSideBar";
 import RightSideBar from "@/components/RightSideBar";
+import { hydrateWorkflowDocument } from "@/lib/workflow/serialization";
 import { useWorkflowEditorStore } from "@/stores/workflow-editor.store";
 import { useWorkflowTheme } from "@/hooks/workflow/useWorkFlowUi";
 
@@ -99,9 +100,14 @@ const Dashboard = () => {
           return;
         }
 
+        const hydratedWorkflow = hydrateWorkflowDocument({
+          nodes: latestWorkflow.nodes,
+          edges: latestWorkflow.edges,
+        });
+
         replaceWorkflow({
-          nodes: latestWorkflow.nodes ?? [],
-          edges: latestWorkflow.edges ?? [],
+          nodes: hydratedWorkflow.nodes,
+          edges: hydratedWorkflow.edges,
           workflowId: latestWorkflow.id,
         });
       } catch (error) {

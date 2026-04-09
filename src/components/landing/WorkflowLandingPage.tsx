@@ -184,7 +184,7 @@ export default function WorkflowLandingPage() {
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [showEmptyProjects, setShowEmptyProjects] = useState(false);
   const [showVisibilityTooltip, setShowVisibilityTooltip] = useState(false);
-  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
+  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [workflows, setWorkflows] = useState<WorkflowListItem[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
@@ -408,37 +408,43 @@ export default function WorkflowLandingPage() {
 
       <div className="flex min-h-screen">
         <div
-          className={`relative hidden h-screen transition-all duration-300 ease-in-out md:block ${
+          className={`relative hidden shrink-0 transition-all duration-300 ease-in-out md:block ${
             isLeftSidebarCollapsed
               ? "w-[51px] min-w-[51px]"
               : "w-[255.5px] min-w-[255.5px]"
           }`}
         >
-          <button
-            type="button"
-            onClick={() => setIsLeftSidebarCollapsed((current) => !current)}
-            className={`absolute top-3 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg bg-transparent transition ${
-              isLeftSidebarCollapsed ? "left-1/2 -translate-x-1/2" : "left-3"
-            } ${
-              isDark
-                ? "text-zinc-400 hover:bg-zinc-800/90 hover:text-zinc-300"
-                : "text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700"
+          <div
+            className={`fixed left-0 top-0 z-20 h-screen transition-all duration-300 ease-in-out ${
+              isLeftSidebarCollapsed
+                ? "w-[51px] min-w-[51px]"
+                : "w-[255.5px] min-w-[255.5px]"
             }`}
-            aria-label={
-              isLeftSidebarCollapsed
-                ? "Expand left sidebar"
-                : "Collapse left sidebar"
-            }
-            title={
-              isLeftSidebarCollapsed
-                ? "Expand left sidebar"
-                : "Collapse left sidebar"
-            }
           >
-            <CollapseSidebarIcon collapsed={isLeftSidebarCollapsed} />
-          </button>
+            <button
+              type="button"
+              onClick={() => setIsLeftSidebarCollapsed((current) => !current)}
+              className={`absolute top-3 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg bg-transparent transition ${
+                isLeftSidebarCollapsed ? "left-1/2 -translate-x-1/2" : "left-3"
+              } ${
+                isDark
+                  ? "text-zinc-400 hover:bg-zinc-800/90 hover:text-zinc-300"
+                  : "text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700"
+              }`}
+              aria-label={
+                isLeftSidebarCollapsed
+                  ? "Expand left sidebar"
+                  : "Collapse left sidebar"
+              }
+              title={
+                isLeftSidebarCollapsed
+                  ? "Expand left sidebar"
+                  : "Collapse left sidebar"
+              }
+            >
+              <CollapseSidebarIcon collapsed={isLeftSidebarCollapsed} />
+            </button>
 
-          <div className="sticky top-0 h-screen">
             <LeftSideBar collapsed={isLeftSidebarCollapsed} />
           </div>
         </div>

@@ -1,18 +1,20 @@
 "use client";
 
-import React, { memo, useEffect, useRef } from "react";
+import React, { memo, useEffect, useRef, useState } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { TextNodeData } from "./text-node.types";
 import { useWorkflowEditorStore } from "@/stores/workflow-editor.store";
-import NodeMenu from "@/components/workflow/common/NodeMenu";
+import NodeHoverRunButton from "@/components/workflow/common/NodeHoverRunButton";
+import { useWorkflowExecution } from "@/hooks/workflow/useWorkFlowExecution";
 import { useWorkflowTheme } from "@/hooks/workflow/useWorkFlowUi";
 
 const TextNodeComponent = ({ id, data, selected }: NodeProps) => {
   const nodeData = data as TextNodeData;
   const updateNodeData = useWorkflowEditorStore((state) => state.updateNodeData);
-  const removeNode = useWorkflowEditorStore((state) => state.removeNode);
+  const { runWorkflow } = useWorkflowExecution();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const { isDark } = useWorkflowTheme();
+  const [draftText, setDraftText] = useState(nodeData.text);
 
   const resizeTextarea = () => {
     const textarea = textareaRef.current;
@@ -23,69 +25,91 @@ const TextNodeComponent = ({ id, data, selected }: NodeProps) => {
 
   useEffect(() => {
     resizeTextarea();
+  }, [draftText]);
+
+  useEffect(() => {
+    setDraftText(nodeData.text);
   }, [nodeData.text]);
 
   const containerClass = isDark
     ? selected
-      ? "min-w-[260px] max-w-[320px] overflow-hidden rounded-[28px] border border-[#4f8cff] bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] ring-2 ring-[#4f8cff]/20 transition"
-      : "min-w-[260px] max-w-[320px] overflow-hidden rounded-[28px] border border-white/10 bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] transition"
+      ? "min-w-[420px] max-w-[420px] overflow-hidden rounded-[22px] border border-[#2e2e2e] bg-[#242424] text-zinc-200 shadow-[0_22px_60px_rgba(0,0,0,0.45)] ring-2 ring-[#4f8cff]/25 transition"
+      : "min-w-[420px] max-w-[420px] overflow-hidden rounded-[22px] border border-[#2d2d2d] bg-[#242424] text-zinc-200 shadow-[0_22px_60px_rgba(0,0,0,0.45)] transition"
     : selected
-    ? "min-w-[260px] max-w-[320px] overflow-hidden rounded-[28px] border border-[#4f8cff] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] ring-2 ring-[#4f8cff]/15 transition"
-    : "min-w-[260px] max-w-[320px] overflow-hidden rounded-[28px] border border-[#ececec] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] transition";
+    ? "min-w-[420px] max-w-[420px] overflow-hidden rounded-[22px] border border-[#4f8cff] bg-[#f5f5f5] text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] ring-2 ring-[#4f8cff]/15 transition"
+    : "min-w-[420px] max-w-[420px] overflow-hidden rounded-[22px] border border-[#e7e7e7] bg-[#f5f5f5] text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] transition";
 
-  const headerClass = isDark
-    ? "flex items-start justify-between border-b border-white/10 px-4 py-3 bg-[#111111]"
-    : "flex items-start justify-between border-b border-[#f0f0f0] px-4 py-3 bg-white";
-
-  const bodyClass = isDark ? "px-4 py-3 bg-[#1a1a1a]" : "px-4 py-3 bg-[#fcfcfc]";
-
-  const mutedLabelClass = isDark
-    ? "text-xs font-medium uppercase tracking-[0.2em] text-zinc-400"
-    : "text-xs font-medium uppercase tracking-[0.2em] text-zinc-500";
+  const topBarClass = isDark
+    ? "mb-3 flex items-center gap-4 px-6 text-zinc-500"
+    : "mb-3 flex items-center gap-4 px-6 text-zinc-500";
 
   const titleClass = isDark
-    ? "mt-1 text-sm font-semibold text-white"
-    : "mt-1 text-sm font-semibold text-zinc-800";
+    ? "text-[18px] font-medium text-zinc-500"
+    : "text-[18px] font-medium text-zinc-500";
+
+  const ioBarClass = isDark
+    ? "flex items-center justify-between border-white/6 px-6 py-2 text-[17px] font-medium text-zinc-500"
+    : "flex items-center justify-between border-black/6 px-6 py-2 text-[17px] font-medium text-zinc-500";
+
+  const bodyClass = isDark ? "px-6 pb-6 pt-3" : "px-6 pb-6 pt-3";
 
   const textareaClass = isDark
-    ? "w-full resize-none overflow-hidden rounded-2xl border border-white/10 bg-[#0d0d0d] px-3 py-3 text-sm leading-6 text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-white/20 focus:bg-[#141414]"
-    : "w-full resize-none overflow-hidden rounded-2xl border border-[#ececec] bg-white px-3 py-3 text-sm leading-6 text-zinc-800 outline-none placeholder:text-zinc-400 focus:border-zinc-300 focus:bg-white";
+    ? "nodrag nopan min-h-[185px] w-full resize-none overflow-hidden rounded-[14px] border border-white/8 bg-[#171717] px-4 py-3 text-[18px] leading-8 text-white outline-none placeholder:text-zinc-500 focus:border-white/12 focus:bg-[#191919]"
+    : "nodrag nopan min-h-[185px] w-full resize-none overflow-hidden rounded-[14px] border border-black/8 bg-white px-4 py-3 text-[18px] leading-8 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-black/12 focus:bg-white";
 
-  const sourceHandleClass = isDark
-    ? "!h-4 !w-4 !border-[3px] !border-[#16381f] !bg-[#22c55e] shadow-[0_0_0_4px_rgba(34,197,94,0.18)]"
-    : "!h-4 !w-4 !border-[3px] !border-[#dcfce7] !bg-[#22c55e] shadow-[0_0_0_4px_rgba(34,197,94,0.14)]";
+  const handleClass = isDark
+    ? "!h-4 !w-4 !border-[3px] !border-[#24193a] !bg-[#4e387e] shadow-[0_0_0_4px_rgba(78,56,126,0.22)]"
+    : "!h-4 !w-4 !border-[3px] !border-[#e9e2f7] !bg-[#4e387e] shadow-[0_0_0_4px_rgba(78,56,126,0.16)]";
 
   return (
-    <div className={containerClass}>
-      <div className={headerClass}>
-        <div>
-          <p className={mutedLabelClass}>Text Node</p>
-          <p className={titleClass}>{nodeData.label}</p>
+    <div className="group relative overflow-visible">
+      <NodeHoverRunButton
+        nodeId={id}
+        onRunWorkflow={() => runWorkflow(id, true)}
+      />
+
+      <div className={topBarClass}>
+        <span className={titleClass}>{nodeData.label || "Text 1"}</span>
+      </div>
+
+      <div className={containerClass}>
+        <Handle
+          type="target"
+          position={Position.Left}
+          id="text-input"
+          style={{ top: 36 }}
+          className={handleClass}
+        />
+
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="text-output"
+          style={{ top: 36 }}
+          className={handleClass}
+        />
+
+        <div className={ioBarClass}>
+          <span>Input</span>
+          <span>Output</span>
         </div>
 
-        <NodeMenu onDelete={() => removeNode(id)} />
+        <div className={bodyClass}>
+          <textarea
+            ref={textareaRef}
+            value={draftText}
+            onChange={(e) => {
+              const nextText = e.target.value;
+              setDraftText(nextText);
+              updateNodeData(id, { text: nextText });
+              requestAnimationFrame(resizeTextarea);
+            }}
+            placeholder="Write Something..."
+            rows={1}
+            className={textareaClass}
+          />
+        </div>
       </div>
-
-      <div className={bodyClass}>
-        <textarea
-          ref={textareaRef}
-          value={nodeData.text}
-          onChange={(e) => {
-            updateNodeData(id, { text: e.target.value });
-            requestAnimationFrame(resizeTextarea);
-          }}
-          placeholder="Enter text here..."
-          rows={1}
-          className={textareaClass}
-        />
-      </div>
-
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="text-output"
-        className={sourceHandleClass}
-      />
     </div>
   );
 };

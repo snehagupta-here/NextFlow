@@ -8,6 +8,7 @@ import { useResolvedNodeInputs } from "@/hooks/workflow/useResolvedNodeInputs";
 import { useConnectedInputHandles } from "@/hooks/workflow/useConnectedInputHandles";
 import ConnectedField from "@/components/workflow/common/ConnectedField";
 import NodeMenu from "@/components/workflow/common/NodeMenu";
+import NodeHoverRunButton from "@/components/workflow/common/NodeHoverRunButton";
 import NodeRunErrorBubble from "@/components/workflow/common/NodeRunErrorBubble";
 import { useWorkflowExecution } from "@/hooks/workflow/useWorkFlowExecution";
 import { useWorkflowTheme } from "@/hooks/workflow/useWorkFlowUi";
@@ -19,7 +20,7 @@ const CropImageNodeComponent = ({ id, data, selected }: NodeProps) => {
 
   const resolvedInputs = useResolvedNodeInputs(id);
   const connectedHandles = useConnectedInputHandles(id);
-  const { runNode } = useWorkflowExecution();
+  const { runNode, runWorkflow } = useWorkflowExecution();
   const { isDark } = useWorkflowTheme();
 
   const hasConnectedImageUrl = connectedHandles.has("image-url-input");
@@ -36,11 +37,11 @@ const CropImageNodeComponent = ({ id, data, selected }: NodeProps) => {
 
   const containerClass = isDark
     ? selected
-      ? "min-w-[320px] max-w-[380px] overflow-hidden rounded-[28px] border border-[#4f8cff] bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] ring-2 ring-[#4f8cff]/20 transition"
-      : "min-w-[320px] max-w-[380px] overflow-hidden rounded-[28px] border border-white/10 bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] transition"
+      ? "min-w-[320px] max-w-[380px] overflow-hidden rounded-[20px] border border-[#4f8cff] bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] ring-2 ring-[#4f8cff]/20 transition"
+      : "min-w-[320px] max-w-[380px] overflow-hidden rounded-[20px] border border-white/10 bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] transition"
     : selected
-    ? "min-w-[320px] max-w-[380px] overflow-hidden rounded-[28px] border border-[#4f8cff] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] ring-2 ring-[#4f8cff]/15 transition"
-    : "min-w-[320px] max-w-[380px] overflow-hidden rounded-[28px] border border-[#ececec] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] transition";
+    ? "min-w-[320px] max-w-[380px] overflow-hidden rounded-[20px] border border-[#4f8cff] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] ring-2 ring-[#4f8cff]/15 transition"
+    : "min-w-[320px] max-w-[380px] overflow-hidden rounded-[20px] border border-[#ececec] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] transition";
 
   const headerClass = isDark
     ? "flex items-start justify-between border-b border-white/10 px-4 py-3 bg-[#111111]"
@@ -59,12 +60,12 @@ const CropImageNodeComponent = ({ id, data, selected }: NodeProps) => {
     : "mt-1 text-sm font-semibold text-zinc-800";
 
   const baseInputClass = isDark
-    ? "w-full rounded-2xl border border-white/10 bg-[#0d0d0d] px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-500"
-    : "w-full rounded-2xl border border-[#ececec] bg-white px-3 py-2 text-sm text-zinc-800 outline-none placeholder:text-zinc-400";
+    ? "nodrag nopan w-full rounded-2xl border border-white/10 bg-[#0d0d0d] px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-500"
+    : "nodrag nopan w-full rounded-2xl border border-[#ececec] bg-white px-3 py-2 text-sm text-zinc-800 outline-none placeholder:text-zinc-400";
 
   const disabledInputClass = isDark
-    ? "w-full rounded-2xl border border-white/8 bg-white/[0.02] px-3 py-2 text-sm text-zinc-500 outline-none placeholder:text-zinc-600 opacity-70 cursor-not-allowed"
-    : "w-full rounded-2xl border border-[#ececec] bg-[#f5f5f5] px-3 py-2 text-sm text-zinc-400 outline-none placeholder:text-zinc-400 opacity-80 cursor-not-allowed";
+    ? "nodrag nopan w-full rounded-2xl border border-white/8 bg-white/[0.02] px-3 py-2 text-sm text-zinc-500 outline-none placeholder:text-zinc-600 opacity-70 cursor-not-allowed"
+    : "nodrag nopan w-full rounded-2xl border border-[#ececec] bg-[#f5f5f5] px-3 py-2 text-sm text-zinc-400 outline-none placeholder:text-zinc-400 opacity-80 cursor-not-allowed";
 
   const buttonClass = isDark
     ? "w-full rounded-2xl border border-white/10 bg-[#0d0d0d] px-3 py-2 text-sm text-white transition hover:bg-[#141414] disabled:cursor-not-allowed disabled:opacity-60"
@@ -81,12 +82,17 @@ const CropImageNodeComponent = ({ id, data, selected }: NodeProps) => {
   const errorClass = isDark ? "text-xs text-red-400" : "text-xs text-red-500";
 
   const targetHandleClass = isDark
-    ? "!h-4 !w-4 !border-[3px] !border-[#16381f] !bg-[#22c55e] shadow-[0_0_0_4px_rgba(34,197,94,0.18)]"
-    : "!h-4 !w-4 !border-[3px] !border-[#dcfce7] !bg-[#22c55e] shadow-[0_0_0_4px_rgba(34,197,94,0.14)]";
+    ? "!h-4 !w-4 !border-[3px] !border-[#24193a] !bg-[#4e387e] shadow-[0_0_0_4px_rgba(78,56,126,0.22)]"
+    : "!h-4 !w-4 !border-[3px] !border-[#e9e2f7] !bg-[#4e387e] shadow-[0_0_0_4px_rgba(78,56,126,0.16)]";
+  const runningTargetHandleClass = nodeData.isProcessing
+    ? isDark
+      ? "workflow-handle-running-dark"
+      : "workflow-handle-running-light"
+    : "";
 
   const sourceHandleClass = isDark
-    ? "!h-4 !w-4 !border-[3px] !border-[#16381f] !bg-[#22c55e] shadow-[0_0_0_4px_rgba(34,197,94,0.18)]"
-    : "!h-4 !w-4 !border-[3px] !border-[#dcfce7] !bg-[#22c55e] shadow-[0_0_0_4px_rgba(34,197,94,0.14)]";
+    ? "!h-4 !w-4 !border-[3px] !border-[#24193a] !bg-[#4e387e] shadow-[0_0_0_4px_rgba(78,56,126,0.22)]"
+    : "!h-4 !w-4 !border-[3px] !border-[#e9e2f7] !bg-[#4e387e] shadow-[0_0_0_4px_rgba(78,56,126,0.16)]";
 
   const updateField = (
     key: "inputImageUrl" | "x" | "y" | "width" | "height",
@@ -96,7 +102,7 @@ const CropImageNodeComponent = ({ id, data, selected }: NodeProps) => {
   };
 
   return (
-    <div className="relative overflow-visible">
+    <div className="group relative overflow-visible">
       {nodeData.error ? (
         <NodeRunErrorBubble
           message={nodeData.error}
@@ -104,12 +110,21 @@ const CropImageNodeComponent = ({ id, data, selected }: NodeProps) => {
         />
       ) : null}
 
+      <NodeHoverRunButton
+        nodeId={id}
+        onRun={() => runNode(id, true)}
+        onRunWorkflow={() => runWorkflow(id, true)}
+        disabled={!!nodeData.isProcessing || !effectiveImageUrl}
+        isRunning={!!nodeData.isProcessing}
+        forceRunTextWhite
+      />
+
       <div className={`${containerClass} ${runningGlowClass}`}>
         <Handle
           type="target"
           position={Position.Left}
           id="image-url-input"
-          className={targetHandleClass}
+          className={`${targetHandleClass} ${runningTargetHandleClass}`}
         />
 
       <div className={headerClass}>
@@ -176,15 +191,6 @@ const CropImageNodeComponent = ({ id, data, selected }: NodeProps) => {
             />
           </ConnectedField>
         </div>
-
-        <button
-          type="button"
-          onClick={() => runNode(id, true)}
-          disabled={!!nodeData.isProcessing || !effectiveImageUrl}
-          className={buttonClass}
-        >
-          {nodeData.isProcessing ? "Cropping..." : "Run Crop"}
-        </button>
 
         {nodeData.croppedImageUrl ? (
           <div className="space-y-3">

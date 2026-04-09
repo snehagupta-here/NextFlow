@@ -185,52 +185,62 @@ const LeftSideBar = ({ collapsed = false }: LeftSideBarProps) => {
         </div>
 
         <div className="mt-auto pt-3">
-          <button
-            type="button"
-            onClick={handleAuthAction}
-            className={`${authItemClass} ${collapsed && !isSignedIn ? "m-1" : ""}`}
-            title={isSignedIn ? "Log out" : "Sign in"}
-            aria-label={isSignedIn ? "Log out" : "Sign in"}
-            disabled={!isLoaded}
-          >
-              {isSignedIn ? (
-                <>
-                  <span
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center ${
-                      isDark ? "text-zinc-300" : "text-zinc-700"
-                    }`}
-                  >
-                    <LogOut size={16} strokeWidth={2.1} />
-                  </span>
-
-                  {!collapsed && (
-                    <span className="text-sm font-medium tracking-[-0.01em]">
-                      Log out
-                    </span>
-                  )}
-                </>
-              ) : (
-                <>
-                  {collapsed ? (
+          {!isLoaded ? (
+            <div
+              aria-hidden="true"
+              className={`animate-pulse ${
+                collapsed
+                  ? "m-1 h-9 w-9 self-center rounded-xl"
+                  : "h-12 w-full rounded-xl"
+              } ${isDark ? "bg-white/8" : "bg-black/6"}`}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={handleAuthAction}
+              className={`${authItemClass} ${collapsed && !isSignedIn ? "m-1" : ""}`}
+              title={isSignedIn ? "Log out" : "Sign in"}
+              aria-label={isSignedIn ? "Log out" : "Sign in"}
+            >
+                {isSignedIn ? (
+                  <>
                     <span
                       className={`flex h-8 w-8 shrink-0 items-center justify-center ${
-                        isDark ? "text-white" : "text-[#171717]"
+                        isDark ? "text-zinc-300" : "text-zinc-700"
                       }`}
                     >
-                      <LogIn size={14} strokeWidth={2.1} />
+                      <LogOut size={16} strokeWidth={2.1} />
                     </span>
-                  ) : (
-                    <span
-                      className={`w-full text-center text-sm font-medium tracking-[-0.01em] ${
-                        isDark ? "text-white" : "text-[#171717]"
-                      }`}
-                    >
-                      Sign in
-                    </span>
-                  )}
-                </>
-              )}
-            </button>
+
+                    {!collapsed && (
+                      <span className="text-sm font-medium tracking-[-0.01em]">
+                        Log out
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {collapsed ? (
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center ${
+                          isDark ? "text-white" : "text-[#171717]"
+                        }`}
+                      >
+                        <LogIn size={14} strokeWidth={2.1} />
+                      </span>
+                    ) : (
+                      <span
+                        className={`w-full text-center text-sm font-medium tracking-[-0.01em] ${
+                          isDark ? "text-white" : "text-[#171717]"
+                        }`}
+                      >
+                        Sign in
+                      </span>
+                    )}
+                  </>
+                )}
+              </button>
+          )}
         </div>
       </div>
     </aside>

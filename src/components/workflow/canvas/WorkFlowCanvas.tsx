@@ -5,13 +5,14 @@ import {
   Background,
   BackgroundVariant,
   ColorMode,
-  Controls,
+  getNodesBounds,
   MarkerType,
   MiniMap,
   Panel,
   ReactFlow,
   SelectionMode,
   useReactFlow,
+  useViewport,
 } from "@xyflow/react";
 import { useAuth } from "@clerk/nextjs";
 import {
@@ -19,6 +20,7 @@ import {
   ChevronDown,
   History,
   Moon,
+  Play,
   Redo2,
   Undo2,
   X,
@@ -60,7 +62,8 @@ function createImportedId(prefix: string, originalId: string) {
 }
 
 function getImportedEdgePresentation(isDark: boolean) {
-  const stroke = isDark ? "#8b5cf6" : "#7c3aed";
+  void isDark;
+  const stroke = "#4e387e";
 
   return {
     animated: true,
@@ -101,6 +104,8 @@ const WorkflowCanvas = ({
   const currentWorkflowId = useWorkflowEditorStore(
     (state) => state.currentWorkflowId
   );
+  const setNodes = useWorkflowEditorStore((state) => state.setNodes);
+  const setEdges = useWorkflowEditorStore((state) => state.setEdges);
   const currentWorkflowName = useWorkflowEditorStore(
     (state) => state.currentWorkflowName
   );
@@ -113,6 +118,7 @@ const WorkflowCanvas = ({
   const { isValidConnection } = useWorkflowValidation();
   const { undo, redo, canUndo, canRedo } = useWorkflowHistory();
   const { runSelected, runAll } = useWorkflowExecution(workflowId);
+  const viewport = useViewport();
   const { screenToFlowPosition, fitView } = useReactFlow();
 
   const [isCanvasLocked, setIsCanvasLocked] = useState(false);
@@ -122,26 +128,35 @@ const WorkflowCanvas = ({
   const [isHistoryMenuOpen, setIsHistoryMenuOpen] = useState(false);
   const [showUndoTooltip, setShowUndoTooltip] = useState(false);
   const [showRedoTooltip, setShowRedoTooltip] = useState(false);
+  const [isDesktopViewport, setIsDesktopViewport] = useState(false);
+  const [lastSingleSelectedNodeId, setLastSingleSelectedNodeId] = useState<
+    string | null
+  >(null);
+  const [selectionRunAnchor, setSelectionRunAnchor] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
   const hasInitializedAutosave = useRef(false);
   const isCreatingDraftWorkflow = useRef(false);
   const lastSavedSnapshot = useRef("");
   const historyMenuRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
 
-  useWorkflowKeyboardDelete();
+  useWorkflowKeyboardDelete(lastSingleSelectedNodeId);
   useWorkflowKeyboardHistory();
 
   const ui = useMemo(() => getFlowTheme(theme), [theme]);
 
   const historyButtonClass = `inline-flex h-9 w-9 items-center justify-center rounded-[12px] border transition shadow-xl backdrop-blur ${
     isDark
-      ? "border-white/10 bg-[#1c1c1c] text-white hover:bg-[#2a2a2a]"
-      : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 shadow-[0_10px_30px_rgba(0,0,0,0.10)]"
+      ? "border-white/10 bg-[#202020] text-white hover:bg-[#303030]"
+      : "border border-black/10 bg-white text-zinc-900 hover:bg-zinc-100 shadow-[0_0_0_1px_rgba(0,0,0,0.03),0_10px_30px_rgba(0,0,0,0.10)]"
   }`;
 
   const topBarButtonClass = `inline-flex h-10 items-center gap-2 rounded-[12px] px-2 text-sm font-medium transition shadow-xl backdrop-blur ${
     isDark
-      ? "border-white/10 bg-[#1c1c1c] text-white hover:bg-[#2a2a2a]"
-      : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 shadow-[0_10px_30px_rgba(0,0,0,0.10)]"
+      ? "border-white/10 bg-[#202020] text-white hover:bg-[#303030]"
+      : "border border-black/10 bg-white text-zinc-900 hover:bg-zinc-100 shadow-[0_0_0_1px_rgba(0,0,0,0.03),0_10px_30px_rgba(0,0,0,0.10)]"
   }`;
   const authButtonClass = `inline-flex h-10 items-center justify-center rounded-[12px] border px-4 text-sm font-medium transition shadow-xl backdrop-blur ${
     isDark
@@ -150,8 +165,8 @@ const WorkflowCanvas = ({
   }`;
 
   const segmentedHistoryClass = isDark
-    ? "overflow-hidden rounded-[11px] border border-[0.5px] border-white/10 bg-[#1c1c1c] shadow-xl backdrop-blur"
-    : "overflow-hidden rounded-[11px] border border-zinc-200 bg-[#f3f3f3] shadow-[0_10px_30px_rgba(0,0,0,0.10)]";
+    ? "overflow-hidden rounded-[11px] border border-[0.5px] border-white/10 bg-[#202020] shadow-xl backdrop-blur"
+    : "overflow-hidden rounded-[11px] border border-black/10 bg-[#f3f3f3] shadow-[0_0_0_1px_rgba(0,0,0,0.03),0_10px_30px_rgba(0,0,0,0.10)]";
 
   const tooltipBubbleClass = isDark
     ? "relative whitespace-nowrap rounded-lg bg-white px-3 py-1 text-[11px] font-medium text-[#171717] shadow-[0_12px_30px_rgba(0,0,0,0.28)] bg-[#1c1c1c] hover:bg-[#2a2a2a]"
@@ -167,8 +182,42 @@ const WorkflowCanvas = ({
     [currentWorkflowName, nodes, edges]
   );
   const effectiveWorkflowId = workflowId ?? currentWorkflowId;
-  const leftSidebarCenterOffset = isLeftSidebarCollapsed ? 0 : 102.25;
-  const rightSidebarCenterOffset = isHistoryOpen ? -160 : 0;
+  const selectedNodes = useMemo(
+    () => nodes.filter((node) => node.selected),
+    [nodes]
+  );
+  const displayedEdges = useMemo(() => {
+    const runningNodeIds = new Set(
+      nodes
+        .filter((node) => Boolean((node.data as { isProcessing?: boolean })?.isProcessing))
+        .map((node) => node.id)
+    );
+
+    return edges.map((edge) => {
+      const isRunningInputEdge = runningNodeIds.has(edge.target);
+
+      if (!isRunningInputEdge) {
+        return edge;
+      }
+
+      const runningClassName = isDark
+        ? "workflow-edge-running-dark"
+        : "workflow-edge-running-light";
+
+      return {
+        ...edge,
+        className: edge.className
+          ? `${edge.className} ${runningClassName}`
+          : runningClassName,
+      };
+    });
+  }, [edges, isDark, nodes]);
+  const leftSidebarCenterOffset = isDesktopViewport
+    ? isLeftSidebarCollapsed
+      ? 0
+      : 102.25
+    : 0;
+  const rightSidebarCenterOffset = isDesktopViewport && isHistoryOpen ? -160 : 0;
   const addNodeCenterOffset =
     leftSidebarCenterOffset + rightSidebarCenterOffset;
 
@@ -220,15 +269,49 @@ const WorkflowCanvas = ({
     });
   };
 
+  const handleSelectionChange = useMemo(
+    () => ({
+      onChange: ({
+        nodes: selectedSelectionNodes,
+        edges: selectedSelectionEdges,
+      }: {
+        nodes: typeof nodes;
+        edges: typeof edges;
+      }) => {
+        if (selectedSelectionNodes.length === 1) {
+          setLastSingleSelectedNodeId(selectedSelectionNodes[0]?.id ?? null);
+
+          setNodes(
+            nodes.map((node) => ({
+              ...node,
+              selected: false,
+            }))
+          );
+
+          setEdges(
+            edges.map((edge) => ({
+              ...edge,
+              selected: false,
+            }))
+          );
+          return;
+        }
+
+      },
+    }),
+    [edges, nodes, setEdges, setNodes]
+  );
+
   const handleSaveWorkflow = async () => {
     try {
       setIsSaving(true);
       setCanvasMessage(null);
 
+      const serializedWorkflow = createWorkflowExportDocument(nodes, edges);
       const payload = {
         name: currentWorkflowName || "Untitled",
-        nodes,
-        edges,
+        nodes: serializedWorkflow.nodes,
+        edges: serializedWorkflow.edges,
       };
 
       let res = await fetch(
@@ -435,8 +518,8 @@ const WorkflowCanvas = ({
 
         const payload = {
           name: currentWorkflowName || "Untitled",
-          nodes,
-          edges,
+          nodes: createWorkflowExportDocument(nodes, edges).nodes,
+          edges: createWorkflowExportDocument(nodes, edges).edges,
         };
 
         const isCreatingNewDraft = !effectiveWorkflowId;
@@ -511,6 +594,57 @@ const WorkflowCanvas = ({
   ]);
 
   useEffect(() => {
+    if (selectedNodes.length < 2 || !canvasRef.current) {
+      setSelectionRunAnchor(null);
+      return;
+    }
+
+    let frameId = 0;
+
+    const updateSelectionAnchor = () => {
+      if (!canvasRef.current) {
+        setSelectionRunAnchor(null);
+        return;
+      }
+
+      const bounds = getNodesBounds(selectedNodes);
+      const fallbackLeft = viewport.x + bounds.x * viewport.zoom - 8;
+      const fallbackTop = viewport.y + bounds.y * viewport.zoom - 8;
+      let nextAnchor = {
+        left: fallbackLeft,
+        top: fallbackTop,
+      };
+
+      const selectionRect = canvasRef.current.querySelector(
+        ".react-flow__nodesselection-rect"
+      ) as HTMLElement | null;
+
+      if (selectionRect) {
+        const canvasRect = canvasRef.current.getBoundingClientRect();
+        const rect = selectionRect.getBoundingClientRect();
+
+        nextAnchor = {
+          left: rect.left - canvasRect.left,
+          top: rect.top - canvasRect.top,
+        };
+      }
+
+      setSelectionRunAnchor(nextAnchor);
+    };
+
+    frameId = window.requestAnimationFrame(updateSelectionAnchor);
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [selectedNodes, viewport.x, viewport.y, viewport.zoom]);
+
+  useEffect(() => {
+    if (!lastSingleSelectedNodeId) return;
+    if (nodes.some((node) => node.id === lastSingleSelectedNodeId)) return;
+
+    setLastSingleSelectedNodeId(null);
+  }, [lastSingleSelectedNodeId, nodes]);
+
+  useEffect(() => {
     if (!isHistoryMenuOpen) return;
 
     const handlePointerDown = (event: MouseEvent) => {
@@ -523,8 +657,19 @@ const WorkflowCanvas = ({
     return () => window.removeEventListener("mousedown", handlePointerDown);
   }, [isHistoryMenuOpen]);
 
+  useEffect(() => {
+    const updateViewport = () => {
+      setIsDesktopViewport(window.innerWidth >= 768);
+    };
+
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+
+    return () => window.removeEventListener("resize", updateViewport);
+  }, []);
+
   return (
-    <div className={ui.canvasClass}>
+    <div ref={canvasRef} className={ui.canvasClass}>
       {canvasMessage?.type === "success" ? (
         <div className="absolute bottom-5 right-5 z-20 w-full max-w-[360px] px-4">
           <div className="rounded-[16px] border border-emerald-500/20 bg-[#102116] px-4 py-3 text-[13px] font-medium text-emerald-300 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
@@ -555,9 +700,34 @@ const WorkflowCanvas = ({
         </div>
       ) : null}
 
+      {selectionRunAnchor ? (
+        <div
+          className="pointer-events-none absolute z-[70]"
+          style={{
+            left: selectionRunAnchor.left,
+            top: selectionRunAnchor.top,
+            transform: "translate(-100%, -2px)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => runSelected(true)}
+            className="pointer-events-auto inline-flex h-7 cursor-pointer items-center gap-2 rounded-[10px] border px-2 text-[12px] font-medium text-white shadow-[0_14px_30px_rgba(16,96,255,0.28)] transition hover:brightness-[0.96]"
+            style={{
+              backgroundColor: "oklch(0.579 0.2497 257.07)",
+              borderColor: "oklch(0.579 0.2497 257.07)",
+            }}
+            aria-label="Run selected nodes"
+          >
+            <Play size={12} fill="currentColor" className="text-white" />
+            <span>Run nodes</span>
+          </button>
+        </div>
+      ) : null}
+
       <ReactFlow
         nodes={nodes}
-        edges={edges}
+        edges={displayedEdges}
         nodeTypes={workflowNodeTypes}
         colorMode={theme as ColorMode}
         onNodesChange={onNodesChange}
@@ -566,6 +736,7 @@ const WorkflowCanvas = ({
         isValidConnection={isValidConnection}
         defaultEdgeOptions={ui.edgeDefaults}
         fitView
+        minZoom={0.1}
         className={ui.flowClass}
         deleteKeyCode={["Delete", "Backspace"]}
         elementsSelectable
@@ -573,6 +744,7 @@ const WorkflowCanvas = ({
         selectionMode={SelectionMode.Partial}
         multiSelectionKeyCode={["Meta", "Control"]}
         selectionKeyCode={["Shift", "Meta", "Control"]}
+        onSelectionChange={handleSelectionChange.onChange}
         zoomOnScroll={!isCanvasLocked}
         panOnScroll={!isCanvasLocked}
         panOnDrag={isCanvasLocked ? false : [1]}
@@ -580,6 +752,8 @@ const WorkflowCanvas = ({
         zoomOnDoubleClick={!isCanvasLocked}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
+        onNodeClick={(_, node) => setLastSingleSelectedNodeId(node.id)}
+        onPaneClick={() => setLastSingleSelectedNodeId(null)}
       >
         <Background
           variant={BackgroundVariant.Dots}
@@ -596,7 +770,6 @@ const WorkflowCanvas = ({
             isSaving={isSaving}
             workflowName={currentWorkflowName}
             onWorkflowNameChange={setCurrentWorkflowName}
-            onRunSelected={() => runSelected(true)}
             onRunAll={() => runAll(true)}
             onSaveWorkflow={handleSaveWorkflow}
             onToggleCanvasLock={() => setIsCanvasLocked((prev) => !prev)}
@@ -613,7 +786,7 @@ const WorkflowCanvas = ({
         </Panel>
 
         <Panel position="top-right">
-          <div className="flex items-center gap-3" ref={historyMenuRef}>
+          <div className="relative z-[80] flex items-center gap-3" ref={historyMenuRef}>
             {isLoaded && !isSignedIn ? (
               <>
                 <button
@@ -686,9 +859,9 @@ const WorkflowCanvas = ({
                     setIsHistoryMenuOpen(false);
                     onOpenHistory?.();
                   }}
-                  className={`flex h-8 w-10 items-center justify-center transition ${
+                  className={`flex h-9 w-10 items-center justify-center transition ${
                     isDark
-                      ? "bg-[#1c1c1c] text-white hover:bg-[#2a2a2a]"
+                      ? "bg-[#202020] text-white hover:bg-[#303030]"
                       : "bg-[#f3f3f3] text-zinc-900 hover:bg-zinc-100"
                   }`}
                   aria-label={isHistoryOpen ? "Collapse workflow history" : "Expand workflow history"}
@@ -702,7 +875,7 @@ const WorkflowCanvas = ({
                   onClick={() => setIsHistoryMenuOpen((prev) => !prev)}
                   className={`flex h-9 w-7 items-center justify-center transition ${
                     isDark
-                      ? "bg-[#1c1c1c] text-white hover:bg-[#2a2a2a]"
+                      ? "bg-[#202020] text-white hover:bg-[#303030]"
                       : "bg-[#f3f3f3] text-zinc-900 hover:bg-zinc-100"
                   }`}
                   aria-label="Toggle history dropdown"
@@ -749,7 +922,7 @@ const WorkflowCanvas = ({
         </Panel>
 
         <Panel position="bottom-left">
-          <div className="ml-20 flex items-center gap-2.5">
+          <div className=" flex items-center gap-2.5 max-[860px]:flex-col">
             <div className="relative">
               {showUndoTooltip ? (
                 <div className="pointer-events-none absolute bottom-[calc(100%+12px)] left-1/2 z-[999] -translate-x-1/2">
@@ -766,9 +939,11 @@ const WorkflowCanvas = ({
 
               <button
                 type="button"
-                onClick={undo}
-                disabled={!canUndo}
-                className={`${historyButtonClass} disabled:cursor-not-allowed disabled:opacity-40`}
+                onClick={() => {
+                  if (!canUndo) return;
+                  undo();
+                }}
+                className={historyButtonClass}
                 aria-label="Undo"
                 onMouseEnter={() => setShowUndoTooltip(true)}
                 onMouseLeave={() => setShowUndoTooltip(false)}
@@ -793,9 +968,11 @@ const WorkflowCanvas = ({
 
               <button
                 type="button"
-                onClick={redo}
-                disabled={!canRedo}
-                className={`${historyButtonClass} disabled:cursor-not-allowed disabled:opacity-40`}
+                onClick={() => {
+                  if (!canRedo) return;
+                  redo();
+                }}
+                className={historyButtonClass}
                 aria-label="Redo"
                 onMouseEnter={() => setShowRedoTooltip(true)}
                 onMouseLeave={() => setShowRedoTooltip(false)}
@@ -805,12 +982,6 @@ const WorkflowCanvas = ({
             </div>
           </div>
         </Panel>
-
-        <Controls
-          position="bottom-left"
-          showInteractive={false}
-          className={ui.controlsClass}
-        />
 
         <MiniMap
           position="bottom-right"

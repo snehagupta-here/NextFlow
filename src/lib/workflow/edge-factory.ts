@@ -5,7 +5,8 @@ export function createWorkflowEdge(
   connection: Connection,
   theme: ThemeMode
 ): Edge {
-  const isDark = theme === "dark";
+  void theme;
+  const stroke = "#4e387e";
 
   return {
     ...connection,
@@ -13,11 +14,11 @@ export function createWorkflowEdge(
     animated: true,
     markerEnd: {
       type: MarkerType.ArrowClosed,
-      color: isDark ? "#71717a" : "#52525b",
+      color: stroke,
     },
     style: {
-      stroke: isDark ? "#71717a" : "#52525b",
-      strokeWidth: 2,
+      stroke,
+      strokeWidth: 2.2,
     },
   };
 }

@@ -29,6 +29,7 @@ type WorkflowEditorState = {
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
   currentWorkflowName: string;
+  hasHydrated: boolean;
 
   history: WorkflowSnapshot[];
   future: WorkflowSnapshot[];
@@ -36,6 +37,7 @@ type WorkflowEditorState = {
 
   setNodes: (nodes: WorkflowNode[]) => void;
   setEdges: (edges: WorkflowEdge[]) => void;
+  setHasHydrated: (value: boolean) => void;
   replaceWorkflow: (payload: {
     nodes: WorkflowNode[];
     edges: WorkflowEdge[];
@@ -116,6 +118,7 @@ export const useWorkflowEditorStore = create<WorkflowEditorState>()(
       nodes: [],
       edges: [],
       currentWorkflowName: "Untitled",
+      hasHydrated: false,
 
       history: [],
       future: [],
@@ -131,6 +134,10 @@ export const useWorkflowEditorStore = create<WorkflowEditorState>()(
         set((state) => ({
           ...pushHistory(state),
           edges,
+        })),
+      setHasHydrated: (value) =>
+        set(() => ({
+          hasHydrated: value,
         })),
       replaceWorkflow: ({ nodes, edges, workflowId, workflowName }) =>
         set(() => ({
@@ -338,15 +345,18 @@ export const useWorkflowEditorStore = create<WorkflowEditorState>()(
     {
       name: "workflow-editor-store",
       storage: createJSONStorage(() => localStorage),
-     partialize: (state) => ({
-  nodes: state.nodes,
-  edges: state.edges,
-  history: state.history,
-  future: state.future,
-  historyRefreshKey: state.historyRefreshKey,
-  currentWorkflowId: state.currentWorkflowId,
-  currentWorkflowName: state.currentWorkflowName,
-}),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
+      partialize: (state) => ({
+        nodes: state.nodes,
+        edges: state.edges,
+        history: state.history,
+        future: state.future,
+        historyRefreshKey: state.historyRefreshKey,
+        currentWorkflowId: state.currentWorkflowId,
+        currentWorkflowName: state.currentWorkflowName,
+      }),
     }
   )
 );

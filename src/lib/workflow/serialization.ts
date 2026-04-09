@@ -244,3 +244,51 @@ export function parseWorkflowImportDocument(input: string): {
     }),
   };
 }
+
+export function hydrateWorkflowDocument(input: {
+  nodes?: unknown[];
+  edges?: unknown[];
+}): {
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+} {
+  const parsed = workflowImportSchema.safeParse({
+    nodes: input.nodes ?? [],
+    edges: input.edges ?? [],
+  });
+
+  if (!parsed.success) {
+    return {
+      nodes: [],
+      edges: [],
+    };
+  }
+
+  return {
+    nodes: parsed.data.nodes.map((node) => ({
+      id: node.id,
+      type: node.type,
+      position: node.position,
+      data: sanitizeNodeData(node.type, node.data as Record<string, unknown>),
+    })),
+    edges: parsed.data.edges.map((edge) => {
+      const hydratedEdge: WorkflowEdge = {
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        sourceHandle: edge.sourceHandle ?? undefined,
+        targetHandle: edge.targetHandle ?? undefined,
+        type: edge.type,
+        animated: edge.animated,
+        data: edge.data,
+        style: edge.style as CSSProperties | undefined,
+      };
+
+      if (edge.markerEnd) {
+        hydratedEdge.markerEnd = edge.markerEnd as WorkflowEdge["markerEnd"];
+      }
+
+      return hydratedEdge;
+    }),
+  };
+}

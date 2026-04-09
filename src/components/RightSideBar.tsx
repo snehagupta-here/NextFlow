@@ -22,6 +22,7 @@ type WorkflowRun = {
   status: "RUNNING" | "SUCCESS" | "FAILED" | "PARTIAL";
   startedAt: string;
   durationMs?: number | null;
+  targetNodeIds?: unknown[] | null;
   nodeRuns: NodeRun[];
 };
 
@@ -184,8 +185,8 @@ const RightSideBar = ({
     : "rounded-xl border border-zinc-200 bg-white p-3";
 
   const codeBlockClass = isDark
-    ? "overflow-x-auto rounded-lg bg-black/40 p-2 text-[11px] text-zinc-300"
-    : "overflow-x-auto rounded-lg bg-zinc-100 p-2 text-[11px] text-zinc-700";
+    ? "overflow-x-auto rounded-lg bg-black/40 p-2 text-[11px] text-zinc-300 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+    : "overflow-x-auto rounded-lg bg-zinc-100 p-2 text-[11px] text-zinc-700 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
 
   const emptyStateClass = isDark
     ? "rounded-2xl border border-dashed border-white/10 p-4 text-xs text-zinc-500"
@@ -216,6 +217,9 @@ const RightSideBar = ({
       <div className="space-y-3">
         {runs.map((run, index) => {
           const expanded = expandedRunId === run.id;
+          const selectedCount = Array.isArray(run.targetNodeIds)
+            ? run.targetNodeIds.length
+            : dedupeNodeRuns(run.nodeRuns).length;
 
           return (
             <div key={run.id} className={runCardClass}>
@@ -247,7 +251,7 @@ const RightSideBar = ({
                     </div>
 
                     <div className={`mt-1 text-[11px] ${secondaryTextClass}`}>
-                      {formatScope(run.scope, run.nodeRuns.length)}
+                      {formatScope(run.scope, selectedCount)}
                     </div>
                   </div>
 
