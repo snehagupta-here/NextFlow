@@ -86,6 +86,8 @@ function sanitizeNodeData(
         imageUrl: String(data.imageUrl ?? baseData.imageUrl),
         assemblyId: String(data.assemblyId ?? baseData.assemblyId ?? ""),
         isUploading: false,
+        isProcessing: false,
+        runId: "",
         error: "",
       };
     }
@@ -101,6 +103,8 @@ function sanitizeNodeData(
         videoUrl: String(data.videoUrl ?? baseData.videoUrl),
         assemblyId: String(data.assemblyId ?? baseData.assemblyId ?? ""),
         isUploading: false,
+        isProcessing: false,
+        runId: "",
         error: "",
       };
     }

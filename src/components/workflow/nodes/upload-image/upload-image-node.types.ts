@@ -4,5 +4,7 @@ export type UploadImageNodeData = {
   imageUrl: string;
   assemblyId?: string;
   isUploading?: boolean;
+  isProcessing?: boolean;
+  runId?: string;
   error?: string;
 };

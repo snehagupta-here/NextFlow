@@ -9,8 +9,14 @@ import WorkflowCanvas from "@/components/workflow/canvas/WorkFlowCanvas";
 import LeftSideBar from "@/components/LeftSideBar";
 import RightSideBar from "@/components/RightSideBar";
 import { hydrateWorkflowDocument } from "@/lib/workflow/serialization";
+import { getWorkflowTemplateById } from "@/lib/workflow/templates";
 import { useWorkflowEditorStore } from "@/stores/workflow-editor.store";
 import { useWorkflowTheme } from "@/hooks/workflow/useWorkFlowUi";
+import {
+  WorkflowNodeType,
+  type WorkflowNode,
+  type WorkflowNodeData,
+} from "@/types/workflow";
 
 const CollapseSidebarIcon = (_: { collapsed: boolean }) => {
   return (
@@ -44,11 +50,13 @@ const CollapseSidebarIcon = (_: { collapsed: boolean }) => {
 type WorkflowEditorPageProps = {
   requestedWorkflowId?: string;
   startBlank?: boolean;
+  templateId?: string;
 };
 
 export default function WorkflowEditorPage({
   requestedWorkflowId,
   startBlank = false,
+  templateId,
 }: WorkflowEditorPageProps) {
   const { isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
@@ -82,12 +90,76 @@ export default function WorkflowEditorPage({
     }
   };
 
+  const fullPageLoadingClass = isDark
+    ? "flex h-dvh w-screen items-center justify-center bg-black text-zinc-400"
+    : "flex h-dvh w-screen items-center justify-center bg-zinc-100 text-zinc-500";
   const canvasLoadingClass = isDark
-    ? "flex h-full w-full items-center justify-center bg-black text-zinc-400"
-    : "flex h-full w-full items-center justify-center bg-zinc-100 text-zinc-500";
+    ? "flex h-full min-h-0 w-full items-center justify-center bg-black text-zinc-400"
+    : "flex h-full min-h-0 w-full items-center justify-center bg-zinc-100 text-zinc-500";
   const loadingPanelClass = isDark
     ? "flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-3"
     : "flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white/80 px-5 py-3";
+
+  const absolutizeAssetUrl = (value: string) => {
+    if (!value) return value;
+
+    try {
+      return new URL(value, window.location.origin).toString();
+    } catch {
+      return value;
+    }
+  };
+
+  const absolutizeTemplateNodes = (nodes: WorkflowNode[]): WorkflowNode[] =>
+    nodes.map((node) => {
+      const data = { ...(node.data as WorkflowNodeData) } as WorkflowNodeData;
+
+      if (node.type === WorkflowNodeType.UPLOAD_IMAGE) {
+        return {
+          ...node,
+          data: {
+            ...data,
+            imageUrl: absolutizeAssetUrl(String((data as any).imageUrl ?? "")),
+          },
+        };
+      }
+
+      if (node.type === WorkflowNodeType.UPLOAD_VIDEO) {
+        return {
+          ...node,
+          data: {
+            ...data,
+            videoUrl: absolutizeAssetUrl(String((data as any).videoUrl ?? "")),
+          },
+        };
+      }
+
+      if (node.type === WorkflowNodeType.CROP_IMAGE) {
+        return {
+          ...node,
+          data: {
+            ...data,
+            croppedImageUrl: absolutizeAssetUrl(
+              String((data as any).croppedImageUrl ?? "")
+            ),
+          },
+        };
+      }
+
+      if (node.type === WorkflowNodeType.EXTRACT_FRAME) {
+        return {
+          ...node,
+          data: {
+            ...data,
+            extractedFrameUrl: absolutizeAssetUrl(
+              String((data as any).extractedFrameUrl ?? "")
+            ),
+          },
+        };
+      }
+
+      return node;
+    });
 
   useEffect(() => {
     setIsThemeReady(true);
@@ -107,6 +179,26 @@ export default function WorkflowEditorPage({
         setIsHydratingWorkflow(true);
 
         if (shouldStartBlank) {
+          const template = getWorkflowTemplateById(templateId);
+
+          if (template) {
+            const hydratedTemplate = hydrateWorkflowDocument({
+              nodes: template.nodes,
+              edges: template.edges,
+            });
+            const preparedTemplateNodes = absolutizeTemplateNodes(
+              hydratedTemplate.nodes
+            );
+
+            replaceWorkflow({
+              nodes: preparedTemplateNodes,
+              edges: hydratedTemplate.edges,
+              workflowName: template.title,
+            });
+            setCurrentWorkflowId(undefined);
+            return;
+          }
+
           resetWorkflow();
           setCurrentWorkflowName("Untitled");
           return;
@@ -170,6 +262,7 @@ export default function WorkflowEditorPage({
     requestedWorkflowId,
     resetWorkflow,
     setCurrentWorkflowName,
+    templateId,
     shouldStartBlank,
   ]);
 
@@ -184,7 +277,20 @@ export default function WorkflowEditorPage({
   if (!hasHydratedStore) {
     return (
       <ReactFlowProvider>
-        <div className={canvasLoadingClass}>
+        <div className={fullPageLoadingClass}>
+          <div className={loadingPanelClass}>
+            <LoaderCircle size={18} className="animate-spin" />
+            <span className="text-sm font-medium">Loading workflow...</span>
+          </div>
+        </div>
+      </ReactFlowProvider>
+    );
+  }
+
+  if (isHydratingWorkflow) {
+    return (
+      <ReactFlowProvider>
+        <div className={fullPageLoadingClass}>
           <div className={loadingPanelClass}>
             <LoaderCircle size={18} className="animate-spin" />
             <span className="text-sm font-medium">Loading workflow...</span>
@@ -320,7 +426,7 @@ export default function WorkflowEditorPage({
           )}
 
           {isHydratingWorkflow ? (
-            <div className={canvasLoadingClass}>
+            <div className={`h-full ${canvasLoadingClass}`}>
               <div className={loadingPanelClass}>
                 <LoaderCircle size={18} className="animate-spin" />
                 <span className="text-sm font-medium">Loading workflow...</span>

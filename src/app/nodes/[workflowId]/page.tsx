@@ -8,8 +8,18 @@ export default async function WorkflowPage(
   const { userId } = await auth();
   const params = await props.params;
   const searchParams = await props.searchParams;
+  const requestedSearchParams = new URLSearchParams();
+
+  if (searchParams.new === "1") {
+    requestedSearchParams.set("new", "1");
+  }
+
+  if (typeof searchParams.template === "string") {
+    requestedSearchParams.set("template", searchParams.template);
+  }
+
   const requestedPath = `/nodes/${params.workflowId}${
-    searchParams.new === "1" ? "?new=1" : ""
+    requestedSearchParams.size > 0 ? `?${requestedSearchParams.toString()}` : ""
   }`;
 
   if (!userId) {
@@ -20,6 +30,11 @@ export default async function WorkflowPage(
     <WorkflowEditorPage
       requestedWorkflowId={params.workflowId}
       startBlank={searchParams.new === "1"}
+      templateId={
+        typeof searchParams.template === "string"
+          ? searchParams.template
+          : undefined
+      }
     />
   );
 }

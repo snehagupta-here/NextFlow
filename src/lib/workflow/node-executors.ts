@@ -5,6 +5,36 @@ import type {
   NodeExecutionResult,
 } from "./execution-types";
 
+type TransloaditSignResponse = {
+  params: {
+    auth: {
+      key: string;
+      expires: string;
+    };
+    template_id: string;
+  };
+  signature: string;
+};
+
+type TransloaditAssemblyResponse = {
+  ok?: string;
+  error?: string;
+  assembly_id?: string;
+  uploads?: Array<{
+    ssl_url?: string;
+    url?: string;
+    name?: string;
+  }>;
+  results?: Record<
+    string,
+    Array<{
+      ssl_url?: string;
+      url?: string;
+      name?: string;
+    }>
+  >;
+};
+
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   const data = await res.json();
@@ -48,6 +78,104 @@ async function pollStatus<TOutput extends object>(
   }
 }
 
+async function waitForVisibleRun(durationMs = 120) {
+  await new Promise((resolve) => setTimeout(resolve, durationMs));
+}
+
+function extractTransloaditAssetUrl(data: TransloaditAssemblyResponse) {
+  const resultGroups = data.results ? Object.values(data.results) : [];
+
+  for (const group of resultGroups) {
+    if (Array.isArray(group) && group.length > 0) {
+      const first = group[0];
+      if (first?.ssl_url) return first.ssl_url;
+      if (first?.url) return first.url;
+    }
+  }
+
+  const upload = data.uploads?.[0];
+  if (upload?.ssl_url) return upload.ssl_url;
+  if (upload?.url) return upload.url;
+
+  return "";
+}
+
+function inferFileNameFromUrl(url: string, fallback: string) {
+  try {
+    const pathname = new URL(url, window.location.origin).pathname;
+    const candidate = pathname.split("/").pop()?.trim();
+    return candidate || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function shouldUploadAssetForExecution(url: string, assemblyId?: string) {
+  if (!url) return false;
+  if (assemblyId?.trim()) return false;
+
+  try {
+    const parsed = new URL(url, window.location.origin);
+    return parsed.origin === window.location.origin;
+  } catch {
+    return true;
+  }
+}
+
+async function uploadAssetToTransloadit(
+  assetUrl: string,
+  fallbackFileName: string
+) {
+  const assetResponse = await fetch(assetUrl, { cache: "no-store" });
+
+  if (!assetResponse.ok) {
+    throw new Error("Failed to load sample media before upload.");
+  }
+
+  const blob = await assetResponse.blob();
+
+  const signRes = await fetch("/api/transloadit/sign", {
+    method: "POST",
+  });
+
+  if (!signRes.ok) {
+    const text = await signRes.text();
+    throw new Error(text || "Failed to get Transloadit signature.");
+  }
+
+  const signedData = (await signRes.json()) as TransloaditSignResponse;
+  const formData = new FormData();
+  formData.append("params", JSON.stringify(signedData.params));
+  formData.append("signature", signedData.signature);
+  formData.append(
+    "file",
+    blob,
+    inferFileNameFromUrl(assetUrl, fallbackFileName)
+  );
+
+  const uploadRes = await fetch("https://api2.transloadit.com/assemblies", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!uploadRes.ok) {
+    const text = await uploadRes.text();
+    throw new Error(text || "Transloadit upload failed.");
+  }
+
+  const assembly = (await uploadRes.json()) as TransloaditAssemblyResponse;
+  const uploadedUrl = extractTransloaditAssetUrl(assembly);
+
+  if (!uploadedUrl) {
+    throw new Error("Upload succeeded, but no asset URL was returned.");
+  }
+
+  return {
+    uploadedUrl,
+    assemblyId: assembly.assembly_id ?? "",
+  };
+}
+
 const executeTextNode: ExecuteNodeFn = async ({ node }) => {
   const text = String((node.data as any).text ?? "");
   return {
@@ -58,9 +186,31 @@ const executeTextNode: ExecuteNodeFn = async ({ node }) => {
 };
 
 const executeUploadImageNode: ExecuteNodeFn = async ({ node }) => {
-  const imageUrl = String((node.data as any).imageUrl ?? "").trim();
+  const data = node.data as any;
+  const imageUrl = String(data.imageUrl ?? "").trim();
   if (!imageUrl) {
     throw new Error("Upload Image node has no uploaded image.");
+  }
+
+  await waitForVisibleRun();
+
+  if (shouldUploadAssetForExecution(imageUrl, data.assemblyId)) {
+    const { uploadedUrl, assemblyId } = await uploadAssetToTransloadit(
+      imageUrl,
+      data.fileName || "sample-image"
+    );
+
+    return {
+      outputs: {
+        "image-url-output": uploadedUrl,
+      },
+      uiPatch: {
+        imageUrl: uploadedUrl,
+        assemblyId,
+        error: "",
+        isProcessing: false,
+      },
+    };
   }
 
   return {
@@ -71,9 +221,31 @@ const executeUploadImageNode: ExecuteNodeFn = async ({ node }) => {
 };
 
 const executeUploadVideoNode: ExecuteNodeFn = async ({ node }) => {
-  const videoUrl = String((node.data as any).videoUrl ?? "").trim();
+  const data = node.data as any;
+  const videoUrl = String(data.videoUrl ?? "").trim();
   if (!videoUrl) {
     throw new Error("Upload Video node has no uploaded video.");
+  }
+
+  await waitForVisibleRun();
+
+  if (shouldUploadAssetForExecution(videoUrl, data.assemblyId)) {
+    const { uploadedUrl, assemblyId } = await uploadAssetToTransloadit(
+      videoUrl,
+      data.fileName || "sample-video"
+    );
+
+    return {
+      outputs: {
+        "video-url-output": uploadedUrl,
+      },
+      uiPatch: {
+        videoUrl: uploadedUrl,
+        assemblyId,
+        error: "",
+        isProcessing: false,
+      },
+    };
   }
 
   return {

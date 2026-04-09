@@ -6,6 +6,7 @@ import { useAuth } from "@clerk/nextjs";
 import { ArrowRight, Check, ChevronDown, Eye, EyeOff, Plus, Search } from "lucide-react";
 import LeftSideBar from "@/components/LeftSideBar";
 import { useWorkflowTheme } from "@/hooks/workflow/useWorkFlowUi";
+import { WORKFLOW_TEMPLATES } from "@/lib/workflow/templates";
 
 type WorkflowListItem = {
   id: string;
@@ -24,7 +25,7 @@ type ShelfCard = {
   title: string;
   subtitle: string;
   href: string;
-  variant: "new" | "project";
+  variant: "new" | "project" | "template";
   isEmpty?: boolean;
 };
 
@@ -123,6 +124,29 @@ function ProjectThumbnail({
     );
   }
 
+  if (variant === "template") {
+    return (
+      <div
+        className={`flex aspect-[2/1.33] w-full items-center justify-center rounded-md border px-7 ${
+          isDark
+            ? "border-white/6 bg-[linear-gradient(180deg,#1b1b1b_0%,#161616_100%)]"
+            : "border-black/8 bg-[linear-gradient(180deg,#fafafa_0%,#f2f2f2_100%)]"
+        }`}
+      >
+        <div className="grid w-full grid-cols-[1.1fr_0.85fr] gap-4">
+          <div className="flex flex-col gap-3">
+            <div className={`h-5 w-24 rounded-full ${isDark ? "bg-white/10" : "bg-black/8"}`} />
+            <div className={`h-[74px] rounded-[10px] ${isDark ? "bg-[#262626]" : "bg-white"} shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]`} />
+          </div>
+          <div className="flex flex-col gap-3 pt-4">
+            <div className={`h-[44px] rounded-[10px] ${isDark ? "bg-[#232323]" : "bg-white"} shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]`} />
+            <div className={`h-[58px] rounded-[10px] ${isDark ? "bg-[#202020]" : "bg-[#f8f8f8]"}`} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex aspect-[2/1.33] w-full items-center justify-center rounded-md border border-white/6 bg-[#1a1a1a] px-10">
       <div className="h-[108px] w-[72px] rounded-[6px] bg-gradient-to-b from-[#585858] to-[#474747]" />
@@ -196,6 +220,10 @@ export default function WorkflowLandingPage() {
 
   useEffect(() => {
     if (!isLoaded) return;
+    if (activeTab !== "Projects") {
+      setIsLoadingProjects(false);
+      return;
+    }
 
     let isCancelled = false;
 
@@ -220,7 +248,10 @@ export default function WorkflowLandingPage() {
         const payload = await response.json().catch(() => null);
 
         if (!response.ok) {
-          throw new Error(payload?.error || "Failed to load workflows.");
+          if (!isCancelled) {
+            setWorkflows([]);
+          }
+          return;
         }
 
         const nextWorkflows = Array.isArray(payload?.workflows)
@@ -230,9 +261,7 @@ export default function WorkflowLandingPage() {
         if (!isCancelled) {
           setWorkflows(nextWorkflows);
         }
-      } catch (error) {
-        console.error(error);
-
+      } catch {
         if (!isCancelled) {
           setWorkflows([]);
         }
@@ -248,7 +277,7 @@ export default function WorkflowLandingPage() {
     return () => {
       isCancelled = true;
     };
-  }, [isLoaded, isSignedIn]);
+  }, [activeTab, isLoaded, isSignedIn]);
 
   const projectCards: ShelfCard[] = [
     {
@@ -268,8 +297,28 @@ export default function WorkflowLandingPage() {
         (workflow.nodes?.length ?? 0) === 0 && (workflow.edges?.length ?? 0) === 0,
     })),
   ];
+  const templateCards: ShelfCard[] = WORKFLOW_TEMPLATES.map((template) => {
+    const href = isSignedIn
+      ? `/nodes/new?template=${encodeURIComponent(template.id)}`
+      : `/sign-in?redirect_url=${encodeURIComponent(
+          `/nodes/new?template=${template.id}`
+        )}`;
 
-  let visibleCards = activeTab === "Projects" ? projectCards : [];
+    return {
+      id: template.id,
+      title: template.title,
+      subtitle: template.description,
+      href,
+      variant: "template" as const,
+    };
+  });
+
+  let visibleCards =
+    activeTab === "Projects"
+      ? projectCards
+      : activeTab === "Templates"
+      ? templateCards
+      : [];
 
   if (activeTab === "Projects" && !showEmptyProjects) {
     visibleCards = visibleCards.filter(
@@ -681,11 +730,24 @@ export default function WorkflowLandingPage() {
               </div>
 
               <div className="pt-8">
-                {activeTab === "Projects" &&
+                {(activeTab === "Projects" || activeTab === "Templates") &&
                 !isLoadingProjects &&
-                visibleCards.length === 1 &&
-                visibleCards[0]?.variant === "new" ? (
-                  <EmptyWorkflowState isDark={isDark} />
+                ((activeTab === "Projects" &&
+                  visibleCards.length === 1 &&
+                  visibleCards[0]?.variant === "new") ||
+                  (activeTab === "Templates" && visibleCards.length === 0)) ? (
+                  activeTab === "Projects" ? (
+                    <EmptyWorkflowState isDark={isDark} />
+                  ) : (
+                    <div className={`rounded-[28px] border px-6 py-10 ${isDark ? "border-white/8 bg-white/[0.02] text-white/72" : "border-black/8 bg-black/[0.02] text-black/70"}`}>
+                      <p className={`text-xl font-medium ${isDark ? "text-white" : "text-[#171717]"}`}>
+                        No templates yet.
+                      </p>
+                      <p className={`mt-2 max-w-[520px] text-[16px] leading-7 ${isDark ? "text-white/50" : "text-black/50"}`}>
+                        Shared starter workflows will appear here for everyone.
+                      </p>
+                    </div>
+                  )
                 ) : activeTab === "Projects" && isLoadingProjects ? (
                   <div className="grid grid-cols-2 gap-x-6 gap-y-10 pb-5 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                     {Array.from({ length: 4 }).map((_, index) => (

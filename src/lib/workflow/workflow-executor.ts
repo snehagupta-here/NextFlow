@@ -83,38 +83,24 @@ export async function executeWorkflow(
 
   const state = buildInitialState(graph);
   const inDegree = { ...graph.inDegree };
-  const ready: string[] = graph.nodeIds.filter((id) => inDegree[id] === 0);
+  const active = new Set<Promise<void>>();
 
-  for (const id of ready) {
-    state.statusByNodeId[id] = "queued";
-    callbacks.onNodeQueued?.(id);
-  }
+  const processNode = async (nodeId: string) => {
+    const node = graph.nodeMap.get(nodeId)!;
 
-  while (ready.length > 0) {
-    const batch = [...ready];
-    ready.length = 0;
+    if (hasFailedDependency(nodeId, graph, state)) {
+      state.statusByNodeId[nodeId] = "skipped";
+      state.errorByNodeId[nodeId] = "Skipped because a dependency failed.";
+      callbacks.onNodeSkipped?.(nodeId, "Skipped because a dependency failed.");
+    } else {
+      const existingOutputs = state.outputsByNodeId[nodeId] ?? {};
+      const hasCachedOutput = Object.keys(existingOutputs).length > 0;
+      const targetNode = isTargetNode(mode, nodeId);
 
-    await Promise.all(
-      batch.map(async (nodeId) => {
-        const node = graph.nodeMap.get(nodeId)!;
-
-        if (hasFailedDependency(nodeId, graph, state)) {
-          state.statusByNodeId[nodeId] = "skipped";
-          state.errorByNodeId[nodeId] = "Skipped because a dependency failed.";
-          callbacks.onNodeSkipped?.(nodeId, "Skipped because a dependency failed.");
-          return;
-        }
-
-        const existingOutputs = state.outputsByNodeId[nodeId] ?? {};
-        const hasCachedOutput = Object.keys(existingOutputs).length > 0;
-        const targetNode = isTargetNode(mode, nodeId);
-
-        if (!targetNode && hasCachedOutput) {
-          state.statusByNodeId[nodeId] = "success";
-          callbacks.onNodeSuccess?.(nodeId, existingOutputs, undefined);
-          return;
-        }
-
+      if (!targetNode && hasCachedOutput) {
+        state.statusByNodeId[nodeId] = "success";
+        callbacks.onNodeSuccess?.(nodeId, existingOutputs, undefined);
+      } else {
         try {
           state.statusByNodeId[nodeId] = "running";
           callbacks.onNodeRunning?.(nodeId);
@@ -141,19 +127,34 @@ export async function executeWorkflow(
 
           callbacks.onNodeError?.(nodeId, message);
         }
-      })
-    );
-
-    for (const nodeId of batch) {
-      for (const edge of graph.outgoingByNode[nodeId] ?? []) {
-        inDegree[edge.target] -= 1;
-        if (inDegree[edge.target] === 0) {
-          ready.push(edge.target);
-          state.statusByNodeId[edge.target] = "queued";
-          callbacks.onNodeQueued?.(edge.target);
-        }
       }
     }
+
+    for (const edge of graph.outgoingByNode[nodeId] ?? []) {
+      inDegree[edge.target] -= 1;
+      if (inDegree[edge.target] === 0) {
+        state.statusByNodeId[edge.target] = "queued";
+        callbacks.onNodeQueued?.(edge.target);
+        scheduleNode(edge.target);
+      }
+    }
+  };
+
+  const scheduleNode = (nodeId: string) => {
+    const task = processNode(nodeId).finally(() => {
+      active.delete(task);
+    });
+    active.add(task);
+  };
+
+  for (const id of graph.nodeIds.filter((nodeId) => inDegree[nodeId] === 0)) {
+    state.statusByNodeId[id] = "queued";
+    callbacks.onNodeQueued?.(id);
+    scheduleNode(id);
+  }
+
+  while (active.size > 0) {
+    await Promise.race(active);
   }
 
   return state;

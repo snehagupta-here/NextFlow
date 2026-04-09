@@ -67,6 +67,11 @@ const UploadVideoNodeComponent = ({ id, data, selected }: NodeProps) => {
   const { runNode, runWorkflow } = useWorkflowExecution();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { isDark } = useWorkflowTheme();
+  const runningGlowClass = nodeData.isProcessing
+    ? isDark
+      ? "workflow-node-running-dark"
+      : "workflow-node-running-light"
+    : "";
 
   const containerClass = isDark
     ? selected
@@ -207,9 +212,11 @@ const UploadVideoNodeComponent = ({ id, data, selected }: NodeProps) => {
         nodeId={id}
         onRun={() => runNode(id, true)}
         onRunWorkflow={() => runWorkflow(id, true)}
+        disabled={!!nodeData.isUploading || !!nodeData.isProcessing}
+        isRunning={!!nodeData.isProcessing}
       />
 
-      <div className={containerClass}>
+      <div className={`${containerClass} ${runningGlowClass}`}>
         <div className={headerClass}>
           <div>
             <p className={mutedLabelClass}>Video Input</p>

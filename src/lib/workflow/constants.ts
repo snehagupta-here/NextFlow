@@ -18,6 +18,8 @@ export const NODE_DEFAULTS: {
     imageUrl: "",
     assemblyId: "",
     isUploading: false,
+    isProcessing: false,
+    runId: "",
     error: "",
   },
   [WorkflowNodeType.UPLOAD_VIDEO]: {
@@ -26,6 +28,8 @@ export const NODE_DEFAULTS: {
     videoUrl: "",
     assemblyId: "",
     isUploading: false,
+    isProcessing: false,
+    runId: "",
     error: "",
   },
   [WorkflowNodeType.CROP_IMAGE]: {

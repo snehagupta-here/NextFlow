@@ -54,16 +54,27 @@ export async function GET(request: Request) {
 
   if (!queryResult.success) return queryResult.response;
 
-  const workflows = await prisma.workflow.findMany({
-    where: workflowWhereByUser(userId),
-    orderBy: { updatedAt: "desc" },
-    take: queryResult.data.limit,
-  });
+  try {
+    const workflows = await prisma.workflow.findMany({
+      where: workflowWhereByUser(userId),
+      orderBy: { updatedAt: "desc" },
+      take: queryResult.data.limit,
+    });
 
-  return NextResponse.json({
-    success: true,
-    workflows,
-  });
+    return NextResponse.json({
+      success: true,
+      workflows,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to load workflows.",
+      },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: Request) {
