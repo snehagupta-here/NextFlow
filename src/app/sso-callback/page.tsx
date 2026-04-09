@@ -1,10 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import { AuthenticateWithRedirectCallback } from "@clerk/nextjs";
 import { LoaderCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
-export default function SSOCallbackPage() {
+function SSOCallbackContent() {
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get("redirect_url") || "/nodes";
 
@@ -25,5 +26,25 @@ export default function SSOCallbackPage() {
         signUpFallbackRedirectUrl={redirectUrl}
       />
     </div>
+  );
+}
+
+function SSOCallbackFallback() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-white text-[#171717]">
+      <div id="clerk-captcha" className="min-h-[1px]" aria-hidden="true" />
+      <div className="flex items-center gap-3 rounded-2xl border border-black/8 bg-white px-5 py-3 shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
+        <LoaderCircle size={18} className="animate-spin text-[#3f6df6]" />
+        <span className="text-sm font-medium">Completing sign in...</span>
+      </div>
+    </div>
+  );
+}
+
+export default function SSOCallbackPage() {
+  return (
+    <Suspense fallback={<SSOCallbackFallback />}>
+      <SSOCallbackContent />
+    </Suspense>
   );
 }
