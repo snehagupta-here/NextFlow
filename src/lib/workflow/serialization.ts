@@ -46,6 +46,16 @@ const workflowDocumentSchema = z.object({
   edges: z.array(workflowEdgeSchema),
 });
 
+const workflowImportSchema = z.union([
+  workflowDocumentSchema,
+  z
+    .object({
+      nodes: z.array(workflowNodeSchema),
+      edges: z.array(workflowEdgeSchema),
+    })
+    .passthrough(),
+]);
+
 export type WorkflowDocument = z.infer<typeof workflowDocumentSchema>;
 
 function sanitizeNodeData(
@@ -197,10 +207,10 @@ export function parseWorkflowImportDocument(input: string): {
     throw new Error("Invalid JSON file.");
   }
 
-  const parsed = workflowDocumentSchema.safeParse(parsedJson);
+  const parsed = workflowImportSchema.safeParse(parsedJson);
 
   if (!parsed.success) {
-    throw new Error("JSON does not match the workflow format.");
+    throw new Error("Invalid workflow file format.");
   }
 
   return {

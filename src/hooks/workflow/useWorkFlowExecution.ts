@@ -67,6 +67,9 @@ export function useWorkflowExecution(workflowId?: string) {
   const currentWorkflowId = useWorkflowEditorStore(
     (state) => state.currentWorkflowId
   );
+  const currentWorkflowName = useWorkflowEditorStore(
+    (state) => state.currentWorkflowName
+  );
   const setCurrentWorkflowId = useWorkflowEditorStore(
     (state) => state.setCurrentWorkflowId
   );
@@ -139,7 +142,7 @@ export function useWorkflowExecution(workflowId?: string) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            name: "My Workflow",
+            name: currentWorkflowName || "Untitled",
             nodes,
             edges,
           }),
@@ -437,6 +440,7 @@ export function useWorkflowExecution(workflowId?: string) {
       isSignedIn,
       applyNodePatch,
       executeLocalOnly,
+      currentWorkflowName,
       setCurrentWorkflowId,
       bumpHistoryRefreshKey,
     ]

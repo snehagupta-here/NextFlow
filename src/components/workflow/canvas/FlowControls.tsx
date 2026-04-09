@@ -1,98 +1,219 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  ChevronDown,
   Lock,
   Unlock,
   Save,
   Play,
   ListChecks,
-  Moon,
-  Sun,
+  ChevronLeft,
 } from "lucide-react";
 
 type FlowControlsProps = {
   isDark: boolean;
   isCanvasLocked: boolean;
   isSaving: boolean;
-  hasWorkflowId: boolean;
-  children?: React.ReactNode;
+  workflowName: string;
+  onWorkflowNameChange: (name: string) => void;
+  children?:
+    | React.ReactNode
+    | ((helpers: { closeMenu: () => void }) => React.ReactNode);
 
   onRunSelected: () => void | Promise<void>;
   onRunAll: () => void | Promise<void>;
   onSaveWorkflow: () => void | Promise<void>;
   onToggleCanvasLock: () => void;
-  onToggleTheme: () => void;
 };
 
 const FlowControls = ({
   isDark,
   isCanvasLocked,
   isSaving,
-  hasWorkflowId,
+  workflowName,
+  onWorkflowNameChange,
   onRunSelected,
   onRunAll,
   onSaveWorkflow,
   onToggleCanvasLock,
-  onToggleTheme,
   children,
 }: FlowControlsProps) => {
-  const pillButtonClass = `inline-flex h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-medium transition shadow-xl backdrop-blur ${
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [draftWorkflowName, setDraftWorkflowName] = useState(workflowName);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const workflowNameInputRef = useRef<HTMLInputElement | null>(null);
+
+  const pillButtonClass = `inline-flex h-10 w-full cursor-pointer items-center gap-3 rounded-lg px-4 text-[12px] font-medium transition ${
     isDark
-      ? "border-white/10 bg-black/90 text-zinc-100 hover:bg-[#101010]"
-      : "border-zinc-200 bg-white/95 text-zinc-900 hover:bg-zinc-100"
+      ? "bg-transparent text-zinc-100 hover:bg-[#141414]"
+      : "bg-transparent text-zinc-900 hover:bg-zinc-100"
   }`;
 
-  const iconButtonClass = `inline-flex h-10 w-10 items-center justify-center rounded-[16px] border transition shadow-xl backdrop-blur ${
+  const menuTriggerClass = `inline-flex h-12 items-center gap-2 rounded-xl px-3 text-sm font-medium transition shadow-xl backdrop-blur ${
     isDark
-      ? "border-white/10 bg-[#121212] text-white hover:bg-[#1a1a1a]"
-      : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 shadow-[0_10px_30px_rgba(0,0,0,0.10)]"
+      ? "border-white/10 bg-[#1c1c1c] text-zinc-100"
+      : "border-zinc-200 bg-[#f3f3f3] text-zinc-900 shadow-[0_10px_30px_rgba(0,0,0,0.10)]"
   }`;
+  const workflowNameButtonClass = isDark
+    ? "inline-flex h-6 max-w-[220px] items-center rounded-lg px-2 text-sm leading-none font-medium text-zinc-100 transition hover:bg-[#2a2a2a]"
+    : "inline-flex h-6 max-w-[220px] items-center rounded-lg px-2 text-sm leading-none font-medium text-zinc-900 transition hover:bg-zinc-200/80";
+  const workflowNameInputClass = isDark
+    ? "h-6 w-[220px] rounded-lg border border-[0.5px] border-white/35 bg-transparent px-2 py-1 text-sm leading-none font-medium text-zinc-100 outline-none placeholder:text-zinc-500"
+    : "h-6 w-[220px] rounded-lg border border-[0.5px] border-black/30 bg-transparent px-2 py-0 text-sm leading-none font-medium text-zinc-900 outline-none placeholder:text-zinc-400";
 
   const disabledClass = "disabled:cursor-not-allowed disabled:opacity-50";
 
+  const handleAction = (callback: () => void | Promise<void>) => async () => {
+    setIsMenuOpen(false);
+    await callback();
+  };
+
+  const handleGoBack = () => {
+    setIsMenuOpen(false);
+    window.history.back();
+  };
+
+  const commitWorkflowName = () => {
+    const trimmedName = draftWorkflowName.trim();
+    onWorkflowNameChange(trimmedName || "Untitled");
+    setDraftWorkflowName(trimmedName);
+    setIsEditingName(false);
+  };
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!containerRef.current) return;
+      if (containerRef.current.contains(event.target as Node)) return;
+      setIsMenuOpen(false);
+    };
+
+    window.addEventListener("mousedown", handlePointerDown);
+    return () => window.removeEventListener("mousedown", handlePointerDown);
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    if (isEditingName) return;
+    setDraftWorkflowName(workflowName);
+  }, [isEditingName, workflowName]);
+
+  useEffect(() => {
+    if (!isEditingName) return;
+    workflowNameInputRef.current?.focus();
+    workflowNameInputRef.current?.select();
+  }, [isEditingName]);
+
+  const closeMenu = () => setIsMenuOpen(false);
+
   return (
-    <div className="flex max-w-[720px] flex-wrap items-center justify-end gap-3">
-      {children}
+    <div className="flex items-center gap-3" ref={containerRef}>
+      <div className="relative">
+        <div className={menuTriggerClass}>
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen((prev) => !prev)}
+            className="inline-flex h-8 w-7 cursor-pointer items-center justify-center rounded-lg transition hover:bg-black/10 dark:hover:bg-white/10"
+            aria-label="Open workflow actions"
+            title="Open workflow actions"
+          >
+            <ChevronDown
+              size={16}
+              className={`transition-transform ${isMenuOpen ? "rotate-180" : ""}`}
+            />
+          </button>
 
-      <button type="button" onClick={onRunSelected} className={pillButtonClass}>
-        <ListChecks size={16} />
-        Run Selected
-      </button>
+          {isEditingName ? (
+            <input
+              ref={workflowNameInputRef}
+              value={draftWorkflowName}
+              onChange={(event) => setDraftWorkflowName(event.target.value)}
+              onBlur={commitWorkflowName}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  commitWorkflowName();
+                }
 
-      <button type="button" onClick={onRunAll} className={pillButtonClass}>
-        <Play size={16} />
-        Run All
-      </button>
+                if (event.key === "Escape") {
+                  setDraftWorkflowName(workflowName);
+                  setIsEditingName(false);
+                }
+              }}
+              placeholder="My Workflow"
+              className={workflowNameInputClass}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsEditingName(true)}
+              className={workflowNameButtonClass}
+              title={workflowName}
+            >
+              <span className="truncate">{workflowName}</span>
+            </button>
+          )}
+        </div>
 
-      <button
-        type="button"
-        onClick={onSaveWorkflow}
-        disabled={isSaving}
-        className={`${pillButtonClass} ${disabledClass}`}
-      >
-        <Save size={16} />
-        {isSaving ? "Saving..." : "Save Workflow"}
-      </button>
+        {isMenuOpen ? (
+          <div
+            className={`absolute left-0 top-14 z-50 flex min-w-[240px] flex-col gap-1 rounded-2xl border border-[0.5px] p-2 shadow-[0_20px_60px_rgba(0,0,0,0.35)] ${
+              isDark
+                ? "border-white/10 bg-[#202020]"
+                : "border-zinc-200 bg-white"
+            }`}
+          >
+            <button
+              type="button"
+              onClick={handleGoBack}
+              className={pillButtonClass}
+            >
+              <ChevronLeft size={14} />
+              Back
+            </button>
 
-      <button
-        type="button"
-        onClick={onToggleCanvasLock}
-        className={pillButtonClass}
-      >
-        {isCanvasLocked ? <Lock size={16} /> : <Unlock size={16} />}
-        {isCanvasLocked ? "Locked" : "Unlocked"}
-      </button>
+            {typeof children === "function" ? children({ closeMenu }) : children}
 
-      <button
-        type="button"
-        onClick={onToggleTheme}
-        className={iconButtonClass}
-        aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-        title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      >
-        {isDark ? <Sun size={16} /> : <Moon size={16} />}
-      </button>
+            <button
+              type="button"
+              onClick={handleAction(() => onRunSelected())}
+              className={pillButtonClass}
+            >
+              <ListChecks size={14} />
+              Run Selected
+            </button>
+
+            <button
+              type="button"
+              onClick={handleAction(() => onRunAll())}
+              className={pillButtonClass}
+            >
+              <Play size={14} />
+              Run All
+            </button>
+
+            <button
+              type="button"
+              onClick={handleAction(() => onSaveWorkflow())}
+              disabled={isSaving}
+              className={`${pillButtonClass} ${disabledClass}`}
+            >
+              <Save size={14} />
+              {isSaving ? "Saving..." : "Save Workflow"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleAction(onToggleCanvasLock)}
+              className={pillButtonClass}
+            >
+              {isCanvasLocked ? <Lock size={14} /> : <Unlock size={14} />}
+              {isCanvasLocked ? "Locked" : "Unlocked"}
+            </button>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 };

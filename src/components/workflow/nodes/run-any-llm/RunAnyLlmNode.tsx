@@ -10,6 +10,7 @@ import { useGeminiModels } from "@/hooks/gemini/useGeminiModels";
 import ModelSelector from "./ModelSelector";
 import ConnectedField from "@/components/workflow/common/ConnectedField";
 import NodeMenu from "@/components/workflow/common/NodeMenu";
+import NodeRunErrorBubble from "@/components/workflow/common/NodeRunErrorBubble";
 import { useWorkflowExecution } from "@/hooks/workflow/useWorkFlowExecution";
 import { useWorkflowTheme } from "@/hooks/workflow/useWorkFlowUi";
 
@@ -57,6 +58,11 @@ const RunAnyLlmNodeComponent = ({ id, data, selected }: NodeProps) => {
   ].filter(Boolean);
 
   const mergedImageUrls = Array.from(new Set(effectiveImageUrls));
+  const runningGlowClass = nodeData.isProcessing
+    ? isDark
+      ? "workflow-node-running-dark"
+      : "workflow-node-running-light"
+    : "";
 
   useEffect(() => {
     if (!models.length) return;
@@ -172,15 +178,11 @@ const RunAnyLlmNodeComponent = ({ id, data, selected }: NodeProps) => {
   const isSelectedModelDisabled = !!selectedModel?.disabled;
 
   const containerClass = isDark
-    ? nodeData.isProcessing
-      ? "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-indigo-400/40 bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] ring-2 ring-indigo-400/20 transition"
-      : selected
-      ? "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-white/10 bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] ring-2 ring-white/10 transition"
+    ? selected
+      ? "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-[#4f8cff] bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] ring-2 ring-[#4f8cff]/20 transition"
       : "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-white/10 bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] transition"
-    : nodeData.isProcessing
-    ? "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-indigo-200 bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] ring-2 ring-indigo-100 transition"
     : selected
-    ? "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-[#e7e7e7] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] ring-2 ring-black/5 transition"
+    ? "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-[#4f8cff] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] ring-2 ring-[#4f8cff]/15 transition"
     : "min-w-[340px] max-w-[420px] overflow-hidden rounded-[28px] border border-[#ececec] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] transition";
 
   const headerClass = isDark
@@ -235,14 +237,22 @@ const RunAnyLlmNodeComponent = ({ id, data, selected }: NodeProps) => {
     : "!h-4 !w-4 !border-[3px] !border-[#dcfce7] !bg-[#22c55e] shadow-[0_0_0_4px_rgba(34,197,94,0.14)]";
 
   return (
-    <div className={containerClass}>
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="system_prompt"
-        style={{ top: "24%" }}
-        className={handleClass}
-      />
+    <div className="relative overflow-visible">
+      {nodeData.error ? (
+        <NodeRunErrorBubble
+          message={nodeData.error}
+          onDismiss={() => updateNodeData(id, { error: "" })}
+        />
+      ) : null}
+
+      <div className={`${containerClass} ${runningGlowClass}`}>
+        <Handle
+          type="target"
+          position={Position.Left}
+          id="system_prompt"
+          style={{ top: "24%" }}
+          className={handleClass}
+        />
 
       <Handle
         type="target"
@@ -399,16 +409,15 @@ const RunAnyLlmNodeComponent = ({ id, data, selected }: NodeProps) => {
             </div>
           </div>
         ) : null}
-
-        {nodeData.error ? <p className={errorClass}>{nodeData.error}</p> : null}
       </div>
 
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="output"
-        className={handleClass}
-      />
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="output"
+          className={handleClass}
+        />
+      </div>
     </div>
   );
 };

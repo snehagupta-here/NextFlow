@@ -28,6 +28,7 @@ type WorkflowSnapshot = {
 type WorkflowEditorState = {
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
+  currentWorkflowName: string;
 
   history: WorkflowSnapshot[];
   future: WorkflowSnapshot[];
@@ -39,6 +40,7 @@ type WorkflowEditorState = {
     nodes: WorkflowNode[];
     edges: WorkflowEdge[];
     workflowId?: string;
+    workflowName?: string;
   }) => void;
   resetWorkflow: () => void;
   bumpHistoryRefreshKey: () => void;
@@ -63,6 +65,7 @@ type WorkflowEditorState = {
   clearCanvas: () => void;
 currentWorkflowId?: string;
 setCurrentWorkflowId: (id?: string) => void;
+setCurrentWorkflowName: (name: string) => void;
   undo: () => void;
   redo: () => void;
   canUndo: () => boolean;
@@ -112,6 +115,7 @@ export const useWorkflowEditorStore = create<WorkflowEditorState>()(
     (set, get) => ({
       nodes: [],
       edges: [],
+      currentWorkflowName: "Untitled",
 
       history: [],
       future: [],
@@ -128,10 +132,11 @@ export const useWorkflowEditorStore = create<WorkflowEditorState>()(
           ...pushHistory(state),
           edges,
         })),
-      replaceWorkflow: ({ nodes, edges, workflowId }) =>
+      replaceWorkflow: ({ nodes, edges, workflowId, workflowName }) =>
         set(() => ({
           nodes,
           edges,
+          currentWorkflowName: workflowName?.trim() || "Untitled",
           history: [],
           future: [],
           historyRefreshKey: 0,
@@ -142,6 +147,7 @@ export const useWorkflowEditorStore = create<WorkflowEditorState>()(
         set(() => ({
           nodes: [],
           edges: [],
+          currentWorkflowName: "Untitled",
           history: [],
           future: [],
           historyRefreshKey: 0,
@@ -158,6 +164,10 @@ export const useWorkflowEditorStore = create<WorkflowEditorState>()(
       setCurrentWorkflowId: (id) =>
         set(() => ({
           currentWorkflowId: id,
+        })),
+      setCurrentWorkflowName: (name) =>
+        set(() => ({
+          currentWorkflowName: name.trim() || "Untitled",
         })),
       patchNodeData: (nodeId, patch) =>
         set((state) => ({
@@ -335,6 +345,7 @@ export const useWorkflowEditorStore = create<WorkflowEditorState>()(
   future: state.future,
   historyRefreshKey: state.historyRefreshKey,
   currentWorkflowId: state.currentWorkflowId,
+  currentWorkflowName: state.currentWorkflowName,
 }),
     }
   )

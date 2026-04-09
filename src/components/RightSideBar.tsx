@@ -167,8 +167,8 @@ const RightSideBar = ({
   const sidebarClass = isDark
     ? "h-full overflow-y-auto bg-black px-4 py-4 text-white"
     : "h-full overflow-y-auto bg-white px-4 py-4 text-zinc-900";
-
-  const mutedTextClass = isDark ? "text-zinc-500" : "text-zinc-500";
+    
+  const mutedTextClass = isDark ? "text-zinc-50" : "text-zinc-500";
   const secondaryTextClass = isDark ? "text-zinc-400" : "text-zinc-600";
 
   const runCardClass = isDark
@@ -188,20 +188,20 @@ const RightSideBar = ({
     : "overflow-x-auto rounded-lg bg-zinc-100 p-2 text-[11px] text-zinc-700";
 
   const emptyStateClass = isDark
-    ? "rounded-2xl border border-dashed border-white/10 p-4 text-sm text-zinc-500"
-    : "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500";
+    ? "rounded-2xl border border-dashed border-white/10 p-4 text-xs text-zinc-500"
+    : "rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-4 text-xs text-zinc-500";
 
   return (
     <aside className={sidebarClass}>
       <div className="mb-4">
-        <h2 className="text-sm font-semibold">Workflow History</h2>
+        <h2 className="text-[13px] font-semibold">Workflow History</h2>
 
         {!isSignedIn ? (
           <p className={`mt-1 text-xs ${mutedTextClass}`}>
             Sign in to view workflow history.
           </p>
         ) : !workflowId ? (
-          <p className={`mt-1 text-xs ${mutedTextClass}`}>
+          <p className={`mt-1 text-[9px] ${mutedTextClass}`}>
             Save a workflow to start tracking run history.
           </p>
         ) : (
@@ -238,22 +238,22 @@ const RightSideBar = ({
 
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-sm font-medium">
+                    <div className="text-[13px] font-medium">
                       Run #{runs.length - index}
                     </div>
 
-                    <div className={`mt-1 text-xs ${mutedTextClass}`}>
+                    <div className={`mt-1 text-[11px] ${mutedTextClass}`}>
                       {new Date(run.startedAt).toLocaleString()}
                     </div>
 
-                    <div className={`mt-1 text-xs ${secondaryTextClass}`}>
+                    <div className={`mt-1 text-[11px] ${secondaryTextClass}`}>
                       {formatScope(run.scope, run.nodeRuns.length)}
                     </div>
                   </div>
 
                   <div className="flex flex-col items-end gap-2">
                     <span
-                      className={`rounded-full px-2 py-1 text-[10px] font-medium ${badgeClass(
+                      className={`rounded-full px-2 py-1 text-[9px] font-medium ${badgeClass(
                         run.status,
                         isDark
                       )}`}
@@ -261,7 +261,7 @@ const RightSideBar = ({
                       {run.status.toLowerCase()}
                     </span>
 
-                    <span className={`text-xs ${mutedTextClass}`}>
+                    <span className={`text-[11px] ${mutedTextClass}`}>
                       {formatDuration(run.durationMs)}
                     </span>
                   </div>
@@ -275,18 +275,18 @@ const RightSideBar = ({
                       <div key={nodeRun.id} className={nodeCardClass}>
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <div className="text-sm font-medium">
+                            <div className="text-[12px] font-medium">
                               {nodeRun.nodeLabel || nodeRun.nodeType} (
                               {nodeRun.nodeId})
                             </div>
 
-                            <div className={`mt-1 text-xs ${mutedTextClass}`}>
+                            <div className={`mt-1 text-[11px] ${mutedTextClass}`}>
                               {formatDuration(nodeRun.durationMs)}
                             </div>
                           </div>
 
                           <span
-                            className={`rounded-full px-2 py-1 text-[10px] font-medium ${badgeClass(
+                            className={`rounded-full px-2 py-1 text-[9px] font-medium ${badgeClass(
                               nodeRun.status,
                               isDark
                             )}`}
@@ -322,7 +322,7 @@ const RightSideBar = ({
                         ) : null}
 
                         {nodeRun.errorMessage ? (
-                          <div className="mt-3 text-xs text-red-500">
+                          <div className="mt-3 text-[11px] text-red-500">
                             Error: {nodeRun.errorMessage}
                           </div>
                         ) : null}

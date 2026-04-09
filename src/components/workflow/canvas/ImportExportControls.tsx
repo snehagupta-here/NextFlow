@@ -7,18 +7,20 @@ type ImportExportControlsProps = {
   isDark: boolean;
   onExportJson: () => void;
   onImportJson: (file: File) => void | Promise<void>;
+  onRequestClose?: () => void;
 };
 
 const ImportExportControls = ({
   isDark,
   onExportJson,
   onImportJson,
+  onRequestClose,
 }: ImportExportControlsProps) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const pillButtonClass = `inline-flex h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-medium transition shadow-xl backdrop-blur ${
+  const pillButtonClass = `inline-flex h-10 cursor-pointer items-center gap-3 rounded-xl px-4 text-[12px] font-medium transition ${
     isDark
-      ? "border-white/10 bg-black/90 text-zinc-100 hover:bg-[#101010]"
+      ? "bg-transparent text-zinc-100 hover:bg-[#141414]"
       : "border-zinc-200 bg-white/95 text-zinc-900 hover:bg-zinc-100"
   }`;
 
@@ -33,7 +35,13 @@ const ImportExportControls = ({
     if (!file) return;
 
     await onImportJson(file);
+    onRequestClose?.();
     event.target.value = "";
+  };
+
+  const handleExport = () => {
+    onExportJson();
+    onRequestClose?.();
   };
 
   return (
@@ -46,14 +54,14 @@ const ImportExportControls = ({
         className="hidden"
       />
 
-      <button type="button" onClick={onExportJson} className={pillButtonClass}>
-        <Download size={16} />
-        Export JSON
+      <button type="button" onClick={handlePickFile} className={`${pillButtonClass} w-full justify-start`}>
+        <Upload size={14} />
+        Import JSON
       </button>
 
-      <button type="button" onClick={handlePickFile} className={pillButtonClass}>
-        <Upload size={16} />
-        Import JSON
+      <button type="button" onClick={handleExport} className={`${pillButtonClass} w-full justify-start`}>
+        <Download size={14} />
+        Export JSON
       </button>
     </>
   );
