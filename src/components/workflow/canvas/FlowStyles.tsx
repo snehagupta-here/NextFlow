@@ -165,62 +165,82 @@ const FlowStyles = ({ isDark }: FlowStylesProps) => {
 
       @keyframes workflow-edge-flow-dark {
         0% {
-          stroke: rgba(96, 165, 250, 0.98);
-          stroke-width: 3px;
+          stroke: #9d00ff;
+          stroke-width: 2.8px;
           stroke-dasharray: 48 260;
           stroke-dashoffset: 308;
           filter:
-            drop-shadow(0 0 10px rgba(96, 165, 250, 0.42))
-            drop-shadow(0 0 18px rgba(59, 130, 246, 0.22));
+            drop-shadow(0 0 6px rgba(157, 0, 255, 0.34))
+            drop-shadow(0 0 12px rgba(157, 0, 255, 0.2));
         }
 
         100% {
-          stroke: rgba(96, 165, 250, 0.98);
-          stroke-width: 3px;
+          stroke: #9d00ff;
+          stroke-width: 2.8px;
           stroke-dasharray: 48 260;
           stroke-dashoffset: 0;
           filter:
-            drop-shadow(0 0 10px rgba(96, 165, 250, 0.42))
-            drop-shadow(0 0 18px rgba(59, 130, 246, 0.22));
+            drop-shadow(0 0 6px rgba(157, 0, 255, 0.34))
+            drop-shadow(0 0 12px rgba(157, 0, 255, 0.2));
         }
       }
 
       @keyframes workflow-edge-flow-light {
         0% {
-          stroke: rgba(59, 130, 246, 0.94);
-          stroke-width: 3px;
+          stroke: #9d00ff;
+          stroke-width: 2.8px;
           stroke-dasharray: 48 260;
           stroke-dashoffset: 308;
           filter:
-            drop-shadow(0 0 8px rgba(59, 130, 246, 0.26))
-            drop-shadow(0 0 14px rgba(96, 165, 250, 0.16));
+            drop-shadow(0 0 5px rgba(157, 0, 255, 0.24))
+            drop-shadow(0 0 10px rgba(157, 0, 255, 0.14));
         }
 
         100% {
-          stroke: rgba(59, 130, 246, 0.94);
-          stroke-width: 3px;
+          stroke: #9d00ff;
+          stroke-width: 2.8px;
           stroke-dasharray: 48 260;
           stroke-dashoffset: 0;
           filter:
-            drop-shadow(0 0 8px rgba(59, 130, 246, 0.26))
-            drop-shadow(0 0 14px rgba(96, 165, 250, 0.16));
+            drop-shadow(0 0 5px rgba(157, 0, 255, 0.24))
+            drop-shadow(0 0 10px rgba(157, 0, 255, 0.14));
         }
       }
 
       .workflow-edge-running-dark .react-flow__edge-path,
       .workflow-edge-running-dark .react-flow__connection-path {
-        animation: workflow-edge-flow-dark 1.15s linear infinite;
+        stroke: #4e387e !important;
+        stroke-width: 2.2px;
         stroke-linecap: round;
         stroke-linejoin: round;
-        stroke: rgba(96, 165, 250, 0.98) !important;
       }
 
       .workflow-edge-running-light .react-flow__edge-path,
       .workflow-edge-running-light .react-flow__connection-path {
-        animation: workflow-edge-flow-light 1.15s linear infinite;
+        stroke: #4e387e !important;
+        stroke-width: 2.2px;
         stroke-linecap: round;
         stroke-linejoin: round;
-        stroke: rgba(59, 130, 246, 0.94) !important;
+      }
+
+      .workflow-edge-running-dark .react-flow__edge-interaction {
+        animation: workflow-edge-flow-dark 1.15s linear infinite;
+        stroke: #9d00ff !important;
+        stroke-opacity: 1 !important;
+        stroke-width: 2.8px !important;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        pointer-events: none;
+      }
+
+      .workflow-edge-running-light .react-flow__edge-interaction {
+        animation: workflow-edge-flow-light 1.15s linear infinite;
+        stroke: #9d00ff !important;
+        stroke-opacity: 1 !important;
+        stroke-width: 2.8px !important;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        pointer-events: none;
       }
 
       .workflow-edge-running-dark .react-flow__arrowhead path {

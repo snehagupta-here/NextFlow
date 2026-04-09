@@ -7,7 +7,9 @@ export function getFlowTheme(theme: ThemeMode) {
 
   return {
     isDark,
-    canvasClass: isDark ? "h-screen w-full bg-[#111111]" : "h-screen w-full bg-zinc-100",
+    canvasClass: isDark
+      ? "relative h-screen w-full overflow-hidden bg-[#111111]"
+      : "relative h-screen w-full overflow-hidden bg-zinc-100",
     flowClass: isDark ? "bg-[#111111]" : "bg-zinc-100",
     backgroundColor: isDark ? "#111111" : "#d4d4d8",
     panelClass: isDark

@@ -220,6 +220,7 @@ const WorkflowCanvas = ({
   const rightSidebarCenterOffset = isDesktopViewport && isHistoryOpen ? -160 : 0;
   const addNodeCenterOffset =
     leftSidebarCenterOffset + rightSidebarCenterOffset;
+  const selectionLayoutKey = `${isDesktopViewport}-${isLeftSidebarCollapsed}-${isHistoryOpen}`;
 
   const showSuccessMessage = (text: string) => {
     setCanvasMessage({ type: "success", text });
@@ -629,13 +630,26 @@ const WorkflowCanvas = ({
         };
       }
 
+      // The pill is rendered with translateX(-100%), so clamp the anchor far enough
+      // inside the canvas that the full button stays clear of the left sidebar.
+      nextAnchor = {
+        left: Math.max(nextAnchor.left, 128),
+        top: nextAnchor.top,
+      };
+
       setSelectionRunAnchor(nextAnchor);
     };
 
     frameId = window.requestAnimationFrame(updateSelectionAnchor);
 
     return () => window.cancelAnimationFrame(frameId);
-  }, [selectedNodes, viewport.x, viewport.y, viewport.zoom]);
+  }, [
+    selectedNodes,
+    viewport.x,
+    viewport.y,
+    viewport.zoom,
+    selectionLayoutKey,
+  ]);
 
   useEffect(() => {
     if (!lastSingleSelectedNodeId) return;
@@ -702,7 +716,7 @@ const WorkflowCanvas = ({
 
       {selectionRunAnchor ? (
         <div
-          className="pointer-events-none absolute z-[70]"
+          className="pointer-events-none absolute z-10"
           style={{
             left: selectionRunAnchor.left,
             top: selectionRunAnchor.top,
