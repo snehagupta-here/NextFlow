@@ -13,7 +13,7 @@ type ImportExportControlsProps = {
 const ImportExportControls = ({
   isDark,
   onExportJson,
-  onImportJson,
+  onImportJson,   
   onRequestClose,
 }: ImportExportControlsProps) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
