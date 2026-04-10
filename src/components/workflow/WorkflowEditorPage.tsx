@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { useAuth } from "@clerk/nextjs";
 import { LoaderCircle } from "lucide-react";
@@ -81,6 +81,7 @@ export default function WorkflowEditorPage({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const [isHydratingWorkflow, setIsHydratingWorkflow] = useState(true);
+  const initializedRequestedWorkflowIdRef = useRef<string | null>(null);
 
   const shouldStartBlank = startBlank;
 
@@ -165,23 +166,30 @@ export default function WorkflowEditorPage({
   }, []);
 
   useEffect(() => {
+    initializedRequestedWorkflowIdRef.current = null;
+  }, [requestedWorkflowId]);
+
+  useEffect(() => {
     if (!isLoaded || !hasHydratedStore) return;
 
     const loadWorkflow = async () => {
-      const hasCurrentWorkflowContent =
-        currentNodesCount > 0 || currentEdgesCount > 0;
-
       if (
         requestedWorkflowId &&
-        currentWorkflowId === requestedWorkflowId &&
-        hasCurrentWorkflowContent
+        initializedRequestedWorkflowIdRef.current === requestedWorkflowId
       ) {
+        setIsHydratingWorkflow(false);
+        return;
+      }
+
+      if (requestedWorkflowId && currentWorkflowId === requestedWorkflowId) {
+        initializedRequestedWorkflowIdRef.current = requestedWorkflowId;
         setIsHydratingWorkflow(false);
         return;
       }
 
       if (!isSignedIn) {
         resetWorkflow();
+        initializedRequestedWorkflowIdRef.current = requestedWorkflowId ?? null;
         setIsHydratingWorkflow(false);
         return;
       }
@@ -207,11 +215,13 @@ export default function WorkflowEditorPage({
               workflowName: template.title,
             });
             setCurrentWorkflowId(undefined);
+            initializedRequestedWorkflowIdRef.current = requestedWorkflowId ?? null;
             return;
           }
 
           resetWorkflow();
           setCurrentWorkflowName("Untitled");
+          initializedRequestedWorkflowIdRef.current = requestedWorkflowId ?? null;
           return;
         }
 
@@ -242,6 +252,7 @@ export default function WorkflowEditorPage({
 
         if (!workflowToLoad) {
           resetWorkflow();
+          initializedRequestedWorkflowIdRef.current = requestedWorkflowId ?? null;
           return;
         }
 
@@ -256,9 +267,11 @@ export default function WorkflowEditorPage({
           workflowId: workflowToLoad.id,
           workflowName: workflowToLoad.name,
         });
+        initializedRequestedWorkflowIdRef.current = workflowToLoad.id;
       } catch (error) {
         console.error(error);
         resetWorkflow();
+        initializedRequestedWorkflowIdRef.current = requestedWorkflowId ?? null;
       } finally {
         setIsHydratingWorkflow(false);
       }
