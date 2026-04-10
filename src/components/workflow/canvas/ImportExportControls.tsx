@@ -8,7 +8,7 @@ type ImportExportControlsProps = {
   onExportJson: () => void;
   onImportJson: (file: File) => void | Promise<void>;
   onRequestClose?: () => void;
-};
+};   
 
 const ImportExportControls = ({
   isDark,
