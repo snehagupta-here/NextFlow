@@ -98,9 +98,6 @@ export default function WorkflowEditorPage({
   const canvasLoadingClass = isDark
     ? "flex h-full min-h-0 w-full items-center justify-center bg-black text-zinc-400"
     : "flex h-full min-h-0 w-full items-center justify-center bg-zinc-100 text-zinc-500";
-  const loadingPanelClass = isDark
-    ? "flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-3"
-    : "flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white/80 px-5 py-3";
 
   const absolutizeAssetUrl = (value: string) => {
     if (!value) return value;
@@ -295,10 +292,7 @@ export default function WorkflowEditorPage({
     return (
       <ReactFlowProvider>
         <div className={fullPageLoadingClass}>
-          <div className={loadingPanelClass}>
-            <LoaderCircle size={18} className="animate-spin" />
-            <span className="text-sm font-medium">Loading workflow...</span>
-          </div>
+          <LoaderCircle size={18} className="animate-spin" />
         </div>
       </ReactFlowProvider>
     );
@@ -308,10 +302,7 @@ export default function WorkflowEditorPage({
     return (
       <ReactFlowProvider>
         <div className={fullPageLoadingClass}>
-          <div className={loadingPanelClass}>
-            <LoaderCircle size={18} className="animate-spin" />
-            <span className="text-sm font-medium">Loading workflow...</span>
-          </div>
+          <LoaderCircle size={18} className="animate-spin" />
         </div>
       </ReactFlowProvider>
     );
@@ -444,10 +435,7 @@ export default function WorkflowEditorPage({
 
           {isHydratingWorkflow ? (
             <div className={`h-full ${canvasLoadingClass}`}>
-              <div className={loadingPanelClass}>
-                <LoaderCircle size={18} className="animate-spin" />
-                <span className="text-sm font-medium">Loading workflow...</span>
-              </div>
+              <LoaderCircle size={18} className="animate-spin" />
             </div>
           ) : null}
         </div>

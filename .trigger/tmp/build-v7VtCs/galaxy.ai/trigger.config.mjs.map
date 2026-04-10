@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": ["../../../../trigger.config.ts"],
+  "mappings": ";;;;;;;;;AAAA;AAGA,IAAO,yBAAQ,aAAa;AAAA,EAC1B,SAAS,QAAQ,IAAI;AAAA,EACrB,aAAa;AAAA,EACb,OAAO,CAAC;AACV,CAAC;AACM,IAAM,iBAAiB;",
+  "names": []
+}
