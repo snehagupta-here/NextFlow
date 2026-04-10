@@ -6,6 +6,7 @@ import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs";
 import { Mail, Shield, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useWorkflowTheme } from "@/hooks/workflow/useWorkFlowUi";
 
 type AuthPromptModalProps = {
   open: boolean;
@@ -69,6 +70,7 @@ export default function AuthPromptModal({
   const { isLoaded: isSignUpLoaded, signUp } = useSignUp();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { isDark } = useWorkflowTheme();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -184,20 +186,30 @@ export default function AuthPromptModal({
       onClick={onClose}
     >
       <div
-        className="relative flex w-full max-w-[840px] overflow-hidden rounded-[22px] bg-white shadow-[0_28px_100px_rgba(0,0,0,0.42)]"
+        className={`relative flex w-full max-w-[840px] overflow-hidden rounded-[22px] shadow-[0_28px_100px_rgba(0,0,0,0.42)] ${
+          isDark ? "bg-[#121212]" : "bg-white"
+        }`}
         onClick={(event) => event.stopPropagation()}
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3.5 top-3.5 z-10 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-black/18 text-white transition hover:bg-black/28"
+          className={`absolute right-3.5 top-3.5 z-10 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full transition ${
+            isDark
+              ? "bg-white/10 text-white hover:bg-white/16"
+              : "bg-black/18 text-white hover:bg-black/28"
+          }`}
           aria-label="Close sign in modal"
         >
           <X size={20} />
         </button>
 
         <div className="flex w-full flex-col px-5 py-6 md:w-[48%] md:px-6">
-          <h2 className="mx-auto max-w-[255px] text-center text-[30px] font-semibold leading-[1.1] tracking-[-0.05em] text-black">
+          <h2
+            className={`mx-auto max-w-[255px] text-center text-[30px] font-semibold leading-[1.1] tracking-[-0.05em] ${
+              isDark ? "text-white" : "text-black"
+            }`}
+          >
             {title}
           </h2>
 
@@ -206,7 +218,11 @@ export default function AuthPromptModal({
               type="button"
               onClick={() => void handleOAuth("oauth_google")}
               disabled={isSubmitting}
-              className="relative inline-flex h-[52px] cursor-pointer items-center justify-center gap-3 rounded-[16px] border-[3px] border-[#3f6df6] bg-black px-4 text-[14px] font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+              className={`relative inline-flex h-[52px] cursor-pointer items-center justify-center gap-3 rounded-[16px] px-4 text-[14px] font-medium transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 ${
+                isDark
+                  ? "border border-black/8 bg-white text-black"
+                  : "border-[3px] border-[#3f6df6] bg-black text-white"
+              }`}
             >
               <span className="absolute right-3 top-[-14px] rounded-full bg-[#3f6df6] px-2.5 py-1 text-[11px] font-semibold text-white">
                 Last Used
@@ -219,7 +235,9 @@ export default function AuthPromptModal({
               type="button"
               onClick={() => void handleOAuth("oauth_apple")}
               disabled={isSubmitting}
-              className="inline-flex h-[46px] cursor-pointer items-center justify-center gap-3 rounded-[14px] bg-black px-4 text-[14px] font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+              className={`inline-flex h-[46px] cursor-pointer items-center justify-center gap-3 rounded-[14px] px-4 text-[14px] font-medium transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 ${
+                isDark ? "bg-white text-black" : "bg-black text-white"
+              }`}
             >
               <AppleMark />
               Continue with Apple
@@ -229,27 +247,43 @@ export default function AuthPromptModal({
               type="button"
               onClick={handleSSO}
               disabled={isSubmitting}
-              className="inline-flex h-[46px] cursor-pointer items-center justify-center gap-3 rounded-[14px] bg-black px-4 text-[14px] font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+              className={`inline-flex h-[46px] cursor-pointer items-center justify-center gap-3 rounded-[14px] px-4 text-[14px] font-medium transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 ${
+                isDark ? "bg-white text-black" : "bg-black text-white"
+              }`}
             >
               <Shield size={20} />
               Single Sign-On (SSO)
             </button>
           </div>
 
-          <div className="py-4 text-center text-[12px] font-medium text-black/35">
+          <div
+            className={`py-4 text-center text-[12px] font-medium ${
+              isDark ? "text-white/35" : "text-black/35"
+            }`}
+          >
             OR
           </div>
 
           <div className="mb-3 min-h-[1px]" aria-hidden="true" />
 
-          <label className="flex h-[50px] items-center gap-3 rounded-[16px] border border-black/15 bg-[#f3f3f3] px-4">
-            <Mail size={20} className="text-black/55" />
+          <label
+            className={`flex h-[50px] items-center gap-3 rounded-[16px] border px-4 ${
+              isDark
+                ? "border-white/12 bg-black"
+                : "border-black/15 bg-[#f3f3f3]"
+            }`}
+          >
+            <Mail size={20} className={isDark ? "text-white/55" : "text-black/55"} />
             <input
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="Enter your email"
-              className="w-full bg-transparent text-[14px] text-black outline-none placeholder:text-black/65"
+              className={`w-full bg-transparent text-[14px] outline-none ${
+                isDark
+                  ? "text-white placeholder:text-white/45"
+                  : "text-black placeholder:text-black/65"
+              }`}
             />
           </label>
 
@@ -257,18 +291,30 @@ export default function AuthPromptModal({
             type="button"
             onClick={handleEmailContinue}
             disabled={isSubmitting || !hasEmail}
-            className="mt-3 inline-flex h-[50px] cursor-pointer items-center justify-center rounded-[16px] bg-[#dce7ff] text-[15px] font-semibold text-[#4f8cff] transition hover:bg-[#d3e1ff] disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-3 inline-flex h-[50px] cursor-pointer items-center justify-center rounded-[16px] text-[15px] font-semibold transition hover:brightness-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            style={{
+              backgroundColor: "oklch(0.579 0.2497 257.07 / 0.16)",
+              color: "oklch(0.579 0.2497 257.07)",
+            }}
           >
             Continue
           </button>
 
-          <p className="mt-3.5 text-center text-[11px] leading-5 text-black/65">
+          <p
+            className={`mt-3.5 text-center text-[11px] leading-5 ${
+              isDark ? "text-white/65" : "text-black/65"
+            }`}
+          >
             By continuing, you agree to NextFlow&apos;s{" "}
             <span className="text-[#5a8cff]">Terms of Use</span> &{" "}
             <span className="text-[#5a8cff]">Privacy Policy</span>.
           </p>
 
-          <p className="mt-3 text-center text-[12px] leading-5 text-black/70">
+          <p
+            className={`mt-3 text-center text-[12px] leading-5 ${
+              isDark ? "text-white/70" : "text-black/70"
+            }`}
+          >
             {mode === "signUp" ? "Already have an account?" : "Don’t have an account?"}{" "}
             <Link
               href={alternateModeHref}
