@@ -29,15 +29,15 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@tailwindcss/oxide-darwin-arm64": "^4.2.2",
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/cli": "^4.2.2",
+    "@tailwindcss/postcss": "^4.2.2",
     "@types/fluent-ffmpeg": "^2.1.28",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
-    "tailwindcss": "^4",
+    "tailwindcss": "^4.2.2",
     "typescript": "^5"
   }
 }
