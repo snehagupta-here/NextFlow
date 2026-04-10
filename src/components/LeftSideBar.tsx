@@ -55,6 +55,16 @@ const LeftSideBar = ({ collapsed = false }: LeftSideBarProps) => {
           ? "bg-[#2f6df6] text-white hover:bg-[#2760dd]"
           : "border border-black/8 bg-white text-[#171717] hover:bg-black/[0.03]"
       }`;
+  const labelClass = `min-w-0 overflow-hidden whitespace-nowrap text-sm font-medium tracking-[-0.01em] transition-all duration-200 ease-out ${
+    collapsed
+      ? "w-0 translate-x-[-4px] opacity-0"
+      : "w-auto translate-x-0 opacity-100"
+  }`;
+  const hintClass = `overflow-hidden px-3 text-xs transition-all duration-200 ease-out ${
+    collapsed || isSignedIn || !isLoaded
+      ? "mb-0 max-h-0 translate-y-[-4px] opacity-0"
+      : "mb-4 max-h-12 translate-y-0 opacity-100"
+  } ${isDark ? "text-zinc-400" : "text-zinc-500"}`;
 
   const items = [
     {
@@ -146,15 +156,9 @@ const LeftSideBar = ({ collapsed = false }: LeftSideBarProps) => {
           collapsed ? "px-2 pt-18 pb-3" : "px-3 pt-18 pb-4"
         }`}
       >
-        {!collapsed && !isSignedIn && isLoaded ? (
-          <p
-            className={`mb-4 px-3 text-xs ${
-              isDark ? "text-zinc-400" : "text-zinc-500"
-            }`}
-          >
-            Sign in to add nodes to the canvas.
-          </p>
-        ) : null}
+        <p aria-hidden={collapsed || isSignedIn || !isLoaded} className={hintClass}>
+          Sign in to add nodes to the canvas.
+        </p>
 
         <div className="flex flex-1 flex-col gap-1.5">
           {items.map(({ icon: Icon, label, type, iconClass }) => (
@@ -164,7 +168,7 @@ const LeftSideBar = ({ collapsed = false }: LeftSideBarProps) => {
               onClick={() => handleAddNode(type)}
               draggable={!!isLoaded && !!isSignedIn}
               onDragStart={(event) => handleDragStart(event, type)}
-              className={itemClass}
+              className={`${itemClass} cursor-pointer`}
               title={label}
               aria-label={label}
               disabled={!isLoaded}
@@ -175,11 +179,12 @@ const LeftSideBar = ({ collapsed = false }: LeftSideBarProps) => {
                 <Icon size={18} strokeWidth={2.1} />
               </span>
 
-              {!collapsed && (
-                <span className="text-sm font-medium tracking-[-0.01em]">
-                  {label}
-                </span>
-              )}
+              <span
+                aria-hidden={collapsed}
+                className={labelClass}
+              >
+                {label}
+              </span>
             </button>
           ))}
         </div>
@@ -198,7 +203,7 @@ const LeftSideBar = ({ collapsed = false }: LeftSideBarProps) => {
             <button
               type="button"
               onClick={handleAuthAction}
-              className={`${authItemClass} ${collapsed && !isSignedIn ? "m-1" : ""}`}
+              className={`${authItemClass} cursor-pointer ${collapsed && !isSignedIn ? "m-1" : ""}`}
               title={isSignedIn ? "Log out" : "Sign in"}
               aria-label={isSignedIn ? "Log out" : "Sign in"}
             >
@@ -212,11 +217,12 @@ const LeftSideBar = ({ collapsed = false }: LeftSideBarProps) => {
                       <LogOut size={16} strokeWidth={2.1} />
                     </span>
 
-                    {!collapsed && (
-                      <span className="text-sm font-medium tracking-[-0.01em]">
-                        Log out
-                      </span>
-                    )}
+                    <span
+                      aria-hidden={collapsed}
+                      className={labelClass}
+                    >
+                      Log out
+                    </span>
                   </>
                 ) : (
                   <>

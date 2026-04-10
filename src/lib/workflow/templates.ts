@@ -20,7 +20,7 @@ function buildProductMarketingKitTemplate(): WorkflowTemplate {
     {
       id: "tpl-text-product-description",
       type: WorkflowNodeType.TEXT,
-      position: { x: 80, y: 40 },
+      position: { x: 120, y: 60 },
       data: {
         label: "Text",
         text: "You are a professional marketing copywriter. Generate a compelling one-paragraph product description.",
@@ -29,7 +29,7 @@ function buildProductMarketingKitTemplate(): WorkflowTemplate {
     {
       id: "tpl-text-product-details",
       type: WorkflowNodeType.TEXT,
-      position: { x: 80, y: 280 },
+      position: { x: 120, y: 340 },
       data: {
         label: "Text",
         text: "Product: Wireless Bluetooth Headphones. Features: Noise cancellation, 30-hour battery, foldable design.",
@@ -38,7 +38,7 @@ function buildProductMarketingKitTemplate(): WorkflowTemplate {
     {
       id: "tpl-upload-image",
       type: WorkflowNodeType.UPLOAD_IMAGE,
-      position: { x: 80, y: 620 },
+      position: { x: 120, y: 760 },
       data: {
         label: "Upload Image",
         fileName: "shopping.jpeg",
@@ -51,7 +51,7 @@ function buildProductMarketingKitTemplate(): WorkflowTemplate {
     {
       id: "tpl-crop-image",
       type: WorkflowNodeType.CROP_IMAGE,
-      position: { x: 420, y: 620 },
+      position: { x: 540, y: 760 },
       data: {
         label: "Crop Image",
         inputImageUrl: "",
@@ -68,7 +68,7 @@ function buildProductMarketingKitTemplate(): WorkflowTemplate {
     {
       id: "tpl-upload-video",
       type: WorkflowNodeType.UPLOAD_VIDEO,
-      position: { x: 780, y: 620 },
+      position: { x: 980, y: 760 },
       data: {
         label: "Upload Video",
         fileName: "sony-headphones-demo.mp4",
@@ -81,7 +81,7 @@ function buildProductMarketingKitTemplate(): WorkflowTemplate {
     {
       id: "tpl-extract-frame",
       type: WorkflowNodeType.EXTRACT_FRAME,
-      position: { x: 1120, y: 620 },
+      position: { x: 1400, y: 760 },
       data: {
         label: "Extract Frame",
         inputVideoUrl: "",
@@ -95,7 +95,7 @@ function buildProductMarketingKitTemplate(): WorkflowTemplate {
     {
       id: "tpl-llm-copy",
       type: WorkflowNodeType.RUN_ANY_LLM,
-      position: { x: 560, y: 60 },
+      position: { x: 720, y: 150 },
       data: {
         label: "Run Any LLM",
         model: "gemini-2.5-flash-lite",
@@ -111,7 +111,7 @@ function buildProductMarketingKitTemplate(): WorkflowTemplate {
     {
       id: "tpl-text-social-post",
       type: WorkflowNodeType.TEXT,
-      position: { x: 1040, y: 40 },
+      position: { x: 1260, y: 60 },
       data: {
         label: "Text",
         text: "You are a social media manager. Create a tweet-length marketing post based on the product image and video frame.",
@@ -120,7 +120,7 @@ function buildProductMarketingKitTemplate(): WorkflowTemplate {
     {
       id: "tpl-llm-final",
       type: WorkflowNodeType.RUN_ANY_LLM,
-      position: { x: 1380, y: 220 },
+      position: { x: 1760, y: 240 },
       data: {
         label: "Run Any LLM",
         model: "gemini-2.5-flash-lite",

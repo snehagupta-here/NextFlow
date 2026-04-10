@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { usePathname, useRouter } from "next/navigation";
 import { ArrowRight, Check, ChevronDown, Eye, EyeOff, Plus, Search } from "lucide-react";
 import LeftSideBar from "@/components/LeftSideBar";
 import { useWorkflowTheme } from "@/hooks/workflow/useWorkFlowUi";
@@ -157,7 +158,7 @@ function ProjectThumbnail({
 function EmptyWorkflowState({ isDark }: { isDark: boolean }) {
   return (
     <div
-      className={`mx-auto flex max-w-[760px] flex-col items-center  px-8 py-8 text-center `}
+      className={`mx-auto flex max-w-[760px] flex-col items-center px-8 py-6 text-center `}
     >
       <img
         src="https://optim-images.krea.ai/https---s-krea-ai-icons-NodeEditor-png-256.webp"
@@ -175,12 +176,18 @@ function EmptyWorkflowState({ isDark }: { isDark: boolean }) {
       </h2>
 
       <p
-        className={`mt-2 max-w-[520px] text-[14px] leading-6 ${
+        className={`mt-2 max-w-[620px] text-[13px] sm:text-[14px] leading-6 ${
           isDark ? "text-white/55" : "text-black/55"
         }`}
       >
         You haven&apos;t created any workflows yet.
-        <br />
+      </p>
+
+      <p
+        className={`mt-1 max-w-[620px] text-[14px] leading-6 ${
+          isDark ? "text-white/55" : "text-black/55"
+        }`}
+      >
         Get started by creating your first one.
       </p>
 
@@ -200,6 +207,8 @@ function EmptyWorkflowState({ isDark }: { isDark: boolean }) {
 
 export default function WorkflowLandingPage() {
   const { isLoaded, isSignedIn } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
   const { isDark } = useWorkflowTheme();
   const [activeTab, setActiveTab] = useState<ShelfTab>("Projects");
   const [query, setQuery] = useState("");
@@ -217,6 +226,9 @@ export default function WorkflowLandingPage() {
   const newWorkflowHref = isSignedIn
     ? "/nodes/new"
     : "/sign-in?redirect_url=%2Fnodes%2Fnew";
+  const signInRedirectHref = `/sign-in?redirect_url=${encodeURIComponent(
+    pathname || "/nodes"
+  )}`;
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -369,6 +381,15 @@ export default function WorkflowLandingPage() {
       setShowVisibilityTooltip(false);
       tooltipTimeoutRef.current = null;
     }, 1800);
+  };
+
+  const handleShelfTabClick = (tab: ShelfTab) => {
+    if (!isSignedIn) {
+      router.push(signInRedirectHref);
+      return;
+    }
+
+    setActiveTab(tab);
   };
 
   useEffect(() => {
@@ -566,7 +587,7 @@ export default function WorkflowLandingPage() {
                   isDark ? "border-white/7" : "border-black/8"
                 }`}
               >
-                <div className="flex flex-wrap gap-1 md:flex-nowrap md:overflow-x-auto xl:overflow-visible">
+                <div className="flex flex-nowrap gap-1 overflow-x-auto max-[380px]:flex-wrap max-[380px]:overflow-visible xl:overflow-visible">
                   {tabs.map((tab) => {
                     const isActive = tab === activeTab;
 
@@ -574,8 +595,14 @@ export default function WorkflowLandingPage() {
                       <button
                         key={tab}
                         type="button"
-                        onClick={() => setActiveTab(tab)}
-                        className={`inline-flex h-10 w-25 items-center justify-center rounded-lg px-4 py-2 text-sm font-medium capitalize transition ${
+                        onClick={() => handleShelfTabClick(tab)}
+                        className={`inline-flex h-10 shrink-0 cursor-pointer items-center justify-center rounded-lg px-3 py-2 text-sm font-medium capitalize transition sm:px-4 ${
+                          tab === "Templates"
+                            ? "max-[380px]:basis-full max-[380px]:justify-start"
+                            : tab === "Projects"
+                              ? "max-[380px]:flex-[1.22] max-[380px]:basis-0"
+                              : "max-[380px]:flex-1 max-[380px]:basis-0"
+                        } ${
                           isActive
                             ? isDark
                               ? "bg-white/8 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
@@ -591,142 +618,144 @@ export default function WorkflowLandingPage() {
                   })}
                 </div>
 
-                <div className="flex w-full flex-row items-center gap-3 self-start xl:w-auto xl:self-auto">
-                  <label
-                    className={`hidden flex-1 items-center gap-3 rounded-lg border px-3 py-2 md:flex md:max-w-[223px] xl:w-[223px] xl:max-w-none xl:flex-none ${
-                      isDark
-                        ? "border-white/10 bg-white/[0.03] text-white/60"
-                        : "border-black/10 bg-white text-black/55"
-                    }`}
-                  >
-                    <Search size={16} />
-                    <input
-                      value={query}
-                      onChange={(event) => setQuery(event.target.value)}
-                      placeholder="Search projects..."
-                      className={`w-full bg-transparent text-sm outline-none ${
+                {isSignedIn ? (
+                  <div className="flex w-full flex-row items-center gap-3 self-start xl:w-auto xl:self-auto">
+                    <label
+                      className={`hidden flex-1 items-center gap-3 rounded-lg border px-3 py-2 md:flex md:max-w-[223px] xl:w-[223px] xl:max-w-none xl:flex-none ${
                         isDark
-                          ? "text-white placeholder:text-white/36"
-                          : "text-[#171717] placeholder:text-black/35"
-                      }`}
-                    />
-                  </label>
-
-                  <div className="relative" ref={sortMenuRef}>
-                    <button
-                      type="button"
-                      onClick={() => setIsSortMenuOpen((current) => !current)}
-                      className={`inline-flex h-9 cursor-pointer items-center justify-between gap-2 rounded-md border px-3 text-sm md:w-[135px] md:shrink-0 ${
-                        isDark
-                          ? "border-white/10 bg-white/[0.03] text-white"
-                          : "border-black/10 bg-white text-[#171717]"
+                          ? "border-white/10 bg-white/[0.03] text-white/60"
+                          : "border-black/10 bg-white text-black/55"
                       }`}
                     >
-                      <span>{sortBy}</span>
-                      <ChevronDown
-                        size={16}
-                        className={`transition-transform ${
-                          isDark ? "text-white/45" : "text-black/40"
-                        } ${
-                          isSortMenuOpen ? "rotate-180" : ""
+                      <Search size={16} />
+                      <input
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        placeholder="Search projects..."
+                        className={`w-full bg-transparent text-sm outline-none ${
+                          isDark
+                            ? "text-white placeholder:text-white/36"
+                            : "text-[#171717] placeholder:text-black/35"
                         }`}
                       />
-                    </button>
+                    </label>
 
-                    {isSortMenuOpen ? (
-                      <div
-                        className={`absolute right-0 top-12 z-20 w-[137px] rounded-xl border p-3 shadow-[0_20px_60px_rgba(0,0,0,0.18)] ${
+                    <div className="relative" ref={sortMenuRef}>
+                      <button
+                        type="button"
+                        onClick={() => setIsSortMenuOpen((current) => !current)}
+                        className={`inline-flex h-9 cursor-pointer items-center justify-between gap-2 rounded-md border px-3 text-sm md:w-[135px] md:shrink-0 ${
                           isDark
-                            ? "border-white/10 bg-[#171717]"
-                            : "border-black/10 bg-white"
+                            ? "border-white/10 bg-white/[0.03] text-white"
+                            : "border-black/10 bg-white text-[#171717]"
                         }`}
                       >
-                        <div>
-                          <p className={`mb-1 text-[12px] ${isDark ? "text-white/35" : "text-black/35"}`}>Sort by</p>
-                          <div className="">
-                            {(["Last viewed", "Date created", "Alphabetical"] as SortBy[]).map(
-                              (option) => (
-                                <button
-                                  key={option}
-                                  type="button"
-                                  onClick={() => {
-                                    setSortBy(option);
-                                    setIsSortMenuOpen(false);
-                                  }}
-                                  className={`flex w-full cursor-pointer items-center justify-between rounded-md px-2 py-1.5 text-left text-[14px] transition ${
-                                    isDark
-                                      ? "text-white hover:bg-white/8"
-                                      : "text-[#171717] hover:bg-black/[0.05]"
-                                  }`}
-                                >
-                                  <span>{option}</span>
-                                  {sortBy === option ? <Check size={15} /> : null}
-                                </button>
-                              )
-                            )}
+                        <span>{sortBy}</span>
+                        <ChevronDown
+                          size={16}
+                          className={`transition-transform ${
+                            isDark ? "text-white/45" : "text-black/40"
+                          } ${
+                            isSortMenuOpen ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+
+                      {isSortMenuOpen ? (
+                        <div
+                          className={`absolute right-0 top-12 z-20 w-[137px] rounded-xl border p-3 shadow-[0_20px_60px_rgba(0,0,0,0.18)] ${
+                            isDark
+                              ? "border-white/10 bg-[#171717]"
+                              : "border-black/10 bg-white"
+                          }`}
+                        >
+                          <div>
+                            <p className={`mb-1 text-[12px] ${isDark ? "text-white/35" : "text-black/35"}`}>Sort by</p>
+                            <div className="">
+                              {(["Last viewed", "Date created", "Alphabetical"] as SortBy[]).map(
+                                (option) => (
+                                  <button
+                                    key={option}
+                                    type="button"
+                                    onClick={() => {
+                                      setSortBy(option);
+                                      setIsSortMenuOpen(false);
+                                    }}
+                                    className={`flex w-full cursor-pointer items-center justify-between rounded-md px-2 py-1.5 text-left text-[14px] transition ${
+                                      isDark
+                                        ? "text-white hover:bg-white/8"
+                                        : "text-[#171717] hover:bg-black/[0.05]"
+                                    }`}
+                                  >
+                                    <span>{option}</span>
+                                    {sortBy === option ? <Check size={15} /> : null}
+                                  </button>
+                                )
+                              )}
+                            </div>
+                          </div>
+
+                          <div className={`my-2 border-t ${isDark ? "border-white/10" : "border-black/10"}`} />
+
+                          <div>
+                            <p className={`mb-1 text-[12px] ${isDark ? "text-white/35" : "text-black/35"}`}>Order by</p>
+                            <div className="">
+                              {(["Newest first", "Oldest first"] as OrderBy[]).map(
+                                (option) => (
+                                  <button
+                                    key={option}
+                                    type="button"
+                                    onClick={() => {
+                                      setOrderBy(option);
+                                      setIsSortMenuOpen(false);
+                                    }}
+                                    className={`flex w-full cursor-pointer items-center justify-between rounded-md px-2 py-1.5 text-left text-[14px] transition ${
+                                      isDark
+                                        ? "text-white hover:bg-white/8"
+                                        : "text-[#171717] hover:bg-black/[0.05]"
+                                    }`}
+                                  >
+                                    <span>{option}</span>
+                                    {orderBy === option ? <Check size={15} /> : null}
+                                  </button>
+                                )
+                              )}
+                            </div>
                           </div>
                         </div>
+                      ) : null}
+                    </div>
 
-                        <div className={`my-2 border-t ${isDark ? "border-white/10" : "border-black/10"}`} />
-
-                        <div>
-                          <p className={`mb-1 text-[12px] ${isDark ? "text-white/35" : "text-black/35"}`}>Order by</p>
-                          <div className="">
-                            {(["Newest first", "Oldest first"] as OrderBy[]).map(
-                              (option) => (
-                                <button
-                                  key={option}
-                                  type="button"
-                                  onClick={() => {
-                                    setOrderBy(option);
-                                    setIsSortMenuOpen(false);
-                                  }}
-                                  className={`flex w-full cursor-pointer items-center justify-between rounded-md px-2 py-1.5 text-left text-[14px] transition ${
-                                    isDark
-                                      ? "text-white hover:bg-white/8"
-                                      : "text-[#171717] hover:bg-black/[0.05]"
-                                  }`}
-                                >
-                                  <span>{option}</span>
-                                  {orderBy === option ? <Check size={15} /> : null}
-                                </button>
-                              )
-                            )}
+                    <div className="relative cursor-pointer">
+                      {showVisibilityTooltip ? (
+                        <div className="pointer-events-none cursor-pointer absolute bottom-[calc(100%+12px)] left-1/2 z-20 -translate-x-1/2">
+                          <div className="relative whitespace-nowrap rounded-lg bg-white px-3 py-1 text-[11px] font-medium text-[#171717] shadow-[0_12px_30px_rgba(0,0,0,0.28)]">
+                            {visibilityTooltipLabel}
+                            <div className="absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-1 rotate-45 bg-white" />
                           </div>
                         </div>
-                      </div>
-                    ) : null}
-                  </div>
+                      ) : null}
 
-                  <div className="relative cursor-pointer">
-                    {showVisibilityTooltip ? (
-                      <div className="pointer-events-none cursor-pointer absolute bottom-[calc(100%+12px)] left-1/2 z-20 -translate-x-1/2">
-                        <div className="relative whitespace-nowrap rounded-lg bg-white px-3 py-1 text-[11px] font-medium text-[#171717] shadow-[0_12px_30px_rgba(0,0,0,0.28)]">
-                          {visibilityTooltipLabel}
-                          <div className="absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-1 rotate-45 bg-white" />
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <button
-                      type="button"
-                      className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border px-2.5 transition ${
-                        isDark
-                          ? "border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/8 hover:text-white"
-                          : "border-black/10 bg-white text-black/45 hover:bg-black/[0.05] hover:text-[#171717]"
-                      }`}
-                      aria-label={visibilityTooltipLabel}
-                      onMouseEnter={() => setShowVisibilityTooltip(true)}
-                      onMouseLeave={() => setShowVisibilityTooltip(false)}
-                      onClick={() => {
-                        setShowEmptyProjects((current) => !current);
-                        showTooltipBriefly();
-                      }}
-                    >
-                      {showEmptyProjects ? <Eye size={16} /> : <EyeOff size={16} />}
-                    </button>
+                      <button
+                        type="button"
+                        className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border px-2.5 transition ${
+                          isDark
+                            ? "border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/8 hover:text-white"
+                            : "border-black/10 bg-white text-black/45 hover:bg-black/[0.05] hover:text-[#171717]"
+                        }`}
+                        aria-label={visibilityTooltipLabel}
+                        onMouseEnter={() => setShowVisibilityTooltip(true)}
+                        onMouseLeave={() => setShowVisibilityTooltip(false)}
+                        onClick={() => {
+                          setShowEmptyProjects((current) => !current);
+                          showTooltipBriefly();
+                        }}
+                      >
+                        {showEmptyProjects ? <Eye size={16} /> : <EyeOff size={16} />}
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : null}
               </div>
 
               <div className="pt-8">

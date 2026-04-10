@@ -111,6 +111,7 @@ export default function AuthPromptModal({
   const callbackUrl = `/sso-callback?redirect_url=${encodeURIComponent(
     redirectComplete
   )}&mode=${mode}`;
+  const hasEmail = email.trim().length > 0;
   const alternateModeHref = `${
     mode === "signUp" ? "/sign-in" : "/sign-up"
   }?redirect_url=${encodeURIComponent(redirectComplete)}`;
@@ -189,7 +190,7 @@ export default function AuthPromptModal({
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3.5 top-3.5 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/18 text-white transition hover:bg-black/28"
+          className="absolute right-3.5 top-3.5 z-10 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-black/18 text-white transition hover:bg-black/28"
           aria-label="Close sign in modal"
         >
           <X size={20} />
@@ -205,7 +206,7 @@ export default function AuthPromptModal({
               type="button"
               onClick={() => void handleOAuth("oauth_google")}
               disabled={isSubmitting}
-              className="relative inline-flex h-[52px] items-center justify-center gap-3 rounded-[16px] border-[3px] border-[#3f6df6] bg-black px-4 text-[14px] font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+              className="relative inline-flex h-[52px] cursor-pointer items-center justify-center gap-3 rounded-[16px] border-[3px] border-[#3f6df6] bg-black px-4 text-[14px] font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <span className="absolute right-3 top-[-14px] rounded-full bg-[#3f6df6] px-2.5 py-1 text-[11px] font-semibold text-white">
                 Last Used
@@ -218,7 +219,7 @@ export default function AuthPromptModal({
               type="button"
               onClick={() => void handleOAuth("oauth_apple")}
               disabled={isSubmitting}
-              className="inline-flex h-[46px] items-center justify-center gap-3 rounded-[14px] bg-black px-4 text-[14px] font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-[46px] cursor-pointer items-center justify-center gap-3 rounded-[14px] bg-black px-4 text-[14px] font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <AppleMark />
               Continue with Apple
@@ -228,7 +229,7 @@ export default function AuthPromptModal({
               type="button"
               onClick={handleSSO}
               disabled={isSubmitting}
-              className="inline-flex h-[46px] items-center justify-center gap-3 rounded-[14px] bg-black px-4 text-[14px] font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-[46px] cursor-pointer items-center justify-center gap-3 rounded-[14px] bg-black px-4 text-[14px] font-medium text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Shield size={20} />
               Single Sign-On (SSO)
@@ -255,8 +256,8 @@ export default function AuthPromptModal({
           <button
             type="button"
             onClick={handleEmailContinue}
-            disabled={isSubmitting}
-            className="mt-3 inline-flex h-[50px] items-center justify-center rounded-[16px] bg-[#dce7ff] text-[15px] font-semibold text-[#4f8cff] transition hover:bg-[#d3e1ff] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isSubmitting || !hasEmail}
+            className="mt-3 inline-flex h-[50px] cursor-pointer items-center justify-center rounded-[16px] bg-[#dce7ff] text-[15px] font-semibold text-[#4f8cff] transition hover:bg-[#d3e1ff] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Continue
           </button>
@@ -271,7 +272,7 @@ export default function AuthPromptModal({
             {mode === "signUp" ? "Already have an account?" : "Don’t have an account?"}{" "}
             <Link
               href={alternateModeHref}
-              className="font-medium text-[#5a8cff] transition hover:text-[#3f6df6]"
+              className="cursor-pointer font-medium text-[#5a8cff] transition hover:text-[#3f6df6]"
             >
               {mode === "signUp" ? "Sign in" : "Sign up"}
             </Link>

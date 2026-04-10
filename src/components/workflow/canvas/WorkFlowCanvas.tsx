@@ -773,7 +773,7 @@ const WorkflowCanvas = ({
           variant={BackgroundVariant.Dots}
           gap={24}
           size={1.2}
-          color={isDark ? "#2f2f2f" : "#71717a"}
+          color={isDark ? "#3a3a3a" : "#7d7d88"}
           className={ui.flowClass}
         />
 

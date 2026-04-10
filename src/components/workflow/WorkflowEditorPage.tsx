@@ -63,6 +63,8 @@ export default function WorkflowEditorPage({
   const currentWorkflowId = useWorkflowEditorStore(
     (state) => state.currentWorkflowId
   );
+  const currentNodesCount = useWorkflowEditorStore((state) => state.nodes.length);
+  const currentEdgesCount = useWorkflowEditorStore((state) => state.edges.length);
   const hasHydratedStore = useWorkflowEditorStore((state) => state.hasHydrated);
   const setCurrentWorkflowId = useWorkflowEditorStore(
     (state) => state.setCurrentWorkflowId
@@ -169,6 +171,18 @@ export default function WorkflowEditorPage({
     if (!isLoaded || !hasHydratedStore) return;
 
     const loadWorkflow = async () => {
+      const hasCurrentWorkflowContent =
+        currentNodesCount > 0 || currentEdgesCount > 0;
+
+      if (
+        requestedWorkflowId &&
+        currentWorkflowId === requestedWorkflowId &&
+        hasCurrentWorkflowContent
+      ) {
+        setIsHydratingWorkflow(false);
+        return;
+      }
+
       if (!isSignedIn) {
         resetWorkflow();
         setIsHydratingWorkflow(false);
@@ -259,6 +273,9 @@ export default function WorkflowEditorPage({
     isLoaded,
     isSignedIn,
     replaceWorkflow,
+    currentEdgesCount,
+    currentNodesCount,
+    currentWorkflowId,
     requestedWorkflowId,
     resetWorkflow,
     setCurrentWorkflowName,
