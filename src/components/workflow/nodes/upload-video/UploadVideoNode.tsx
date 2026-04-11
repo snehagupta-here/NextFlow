@@ -1,10 +1,10 @@
 "use client";
 
-import React, { memo, useRef } from "react";
+import React, { memo, useRef, useState } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { Info } from "lucide-react";
 import type { UploadVideoNodeData } from "./upload-video-node.types";
 import { useWorkflowEditorStore } from "@/stores/workflow-editor.store";
-import NodeMenu from "@/components/workflow/common/NodeMenu";
 import NodeHoverRunButton from "@/components/workflow/common/NodeHoverRunButton";
 import NodeRunErrorBubble from "@/components/workflow/common/NodeRunErrorBubble";
 import { useWorkflowExecution } from "@/hooks/workflow/useWorkFlowExecution";
@@ -62,8 +62,9 @@ function extractVideoUrl(data: TransloaditAssemblyResponse) {
 
 const UploadVideoNodeComponent = ({ id, data, selected }: NodeProps) => {
   const nodeData = data as UploadVideoNodeData;
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [isOutputTooltipOpen, setIsOutputTooltipOpen] = useState(false);
   const updateNodeData = useWorkflowEditorStore((state) => state.updateNodeData);
-  const removeNode = useWorkflowEditorStore((state) => state.removeNode);
   const { runNode, runWorkflow } = useWorkflowExecution();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { isDark } = useWorkflowTheme();
@@ -75,59 +76,48 @@ const UploadVideoNodeComponent = ({ id, data, selected }: NodeProps) => {
 
   const containerClass = isDark
     ? selected
-      ? "min-w-[320px] max-w-[360px] overflow-hidden rounded-[20px] border border-[#4f8cff] bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] ring-2 ring-[#4f8cff]/20 transition"
-      : "min-w-[320px] max-w-[360px] overflow-hidden rounded-[20px] border border-white/10 bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] transition"
+      ? "min-w-[318px] max-w-[318px] overflow-hidden rounded-[16px] border border-[#4f8cff] bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] ring-2 ring-[#4f8cff]/20 transition"
+      : "min-w-[318px] max-w-[318px] overflow-hidden rounded-[16px] border border-white/10 bg-[#111111] text-zinc-200 shadow-[0_20px_60px_rgba(0,0,0,0.45)] transition"
     : selected
-    ? "min-w-[320px] max-w-[360px] overflow-hidden rounded-[20px] border border-[#4f8cff] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] ring-2 ring-[#4f8cff]/15 transition"
-    : "min-w-[320px] max-w-[360px] overflow-hidden rounded-[20px] border border-[#ececec] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] transition";
-
-  const headerClass = isDark
-    ? "flex items-start justify-between border-b border-white/10 px-4 py-3 bg-[#111111]"
-    : "flex items-start justify-between border-b border-[#f0f0f0] px-4 py-3 bg-white";
+    ? "min-w-[318px] max-w-[318px] overflow-hidden rounded-[16px] border border-[#4f8cff] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] ring-2 ring-[#4f8cff]/15 transition"
+    : "min-w-[318px] max-w-[318px] overflow-hidden rounded-[16px] border border-[#ececec] bg-white text-zinc-700 shadow-[0_16px_40px_rgba(0,0,0,0.08)] transition";
 
   const bodyClass = isDark
-    ? "space-y-3 px-4 py-3 bg-[#1a1a1a]"
+    ? "space-y-3 px-4 py-3"
     : "space-y-3 px-4 py-3 bg-[#fcfcfc]";
 
-  const mutedLabelClass = isDark
-    ? "text-xs font-medium uppercase tracking-[0.2em] text-zinc-400"
-    : "text-xs font-medium uppercase tracking-[0.2em] text-zinc-500";
+  const outputBoxClass = isDark
+    ? "relative border border-white/[0.04] bg-[#1b1b1b] px-4 py-4 text-zinc-400"
+    : "relative border border-black/[0.04] bg-white px-4 py-4 text-zinc-500";
 
-  const titleClass = isDark
-    ? "mt-1 text-sm font-semibold text-white"
-    : "mt-1 text-sm font-semibold text-zinc-800";
+  const outputPlaceholderClass =
+    "text-[15px] text-zinc-500";
 
-  const uploadButtonClass = isDark
-    ? "flex h-[260px] w-full items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-4 text-center transition hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-60"
-    : "flex h-[260px] w-full items-center justify-center rounded-2xl border border-dashed border-[#d4d4d8] bg-white px-4 text-center transition hover:bg-[#f8f8f8] disabled:cursor-not-allowed disabled:opacity-60";
+  const filePickerClass = isDark
+    ? `flex h-10 flex-1 items-center rounded-[12px] border border-white/8 bg-[#171717] px-2 ${
+        nodeData?.fileName ? "text-[11px]" : "text-[14px] cursor-pointer"
+      } text-zinc-400 transition hover:bg-[#1d1d1d] disabled:cursor-not-allowed disabled:opacity-60`
+    : `flex h-10 flex-1 items-center rounded-[12px] border border-[#ececec] bg-white px-2 ${
+        nodeData?.fileName ? "text-[11px]" : "text-[14px] cursor-pointer"
+      } text-zinc-500 transition hover:bg-[#f8f8f8] disabled:cursor-not-allowed disabled:opacity-60`;
 
-  const uploadTitleClass = isDark
-    ? "text-sm font-medium text-white"
-    : "text-sm font-medium text-zinc-800";
+  const rowLabelClass = isDark
+    ? "text-[14px] font-medium text-zinc-300"
+    : "text-[14px] font-medium text-zinc-700";
 
-  const uploadSubtitleClass = "mt-2 text-xs text-zinc-500";
-
-  const previewBoxClass = isDark
-    ? "overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
-    : "overflow-hidden rounded-2xl border border-[#ececec] bg-white";
-
-  const fileInfoClass = isDark
-    ? "nodrag nopan rounded-2xl border border-white/10 bg-white/[0.03] p-3"
-    : "nodrag nopan rounded-2xl border border-[#ececec] bg-white p-3";
-
-  const fileNameClass = isDark
-    ? "truncate text-sm text-zinc-200"
-    : "truncate text-sm text-zinc-800";
-
-  const fileUrlClass = "mt-1 break-all text-xs text-zinc-500";
+  const inlinePreviewClass = isDark
+    ? "overflow-hidden rounded-[14px] border border-white/10 bg-white/[0.03]"
+    : "overflow-hidden rounded-[14px] border border-[#ececec] bg-white";
 
   const replaceButtonClass = isDark
-    ? "rounded-2xl border border-white/10 bg-[#0d0d0d] px-3 py-2 text-sm text-white transition hover:bg-[#141414]"
-    : "rounded-2xl border border-[#ececec] bg-white px-3 py-2 text-sm text-zinc-800 transition hover:bg-[#f5f5f5]";
+    ? "cursor-pointer rounded-2xl border border-white/10 bg-[#0d0d0d] px-3 py-2 text-sm text-white transition hover:bg-[#141414]"
+    : "cursor-pointer rounded-2xl border border-[#ececec] bg-white px-3 py-2 text-sm text-zinc-800 transition hover:bg-[#f5f5f5]";
 
   const sourceHandleClass = isDark
-    ? "!h-4 !w-4 !border-[3px] !border-[#24193a] !bg-[#4e387e] shadow-[0_0_0_4px_rgba(78,56,126,0.22)]"
-    : "!h-4 !w-4 !border-[3px] !border-[#e9e2f7] !bg-[#4e387e] shadow-[0_0_0_4px_rgba(78,56,126,0.16)]";
+    ? "!h-4 !w-4 !border-[3px] !border-[#24193a] !bg-[#4e387e] shadow-[0_0_0_4px_rgba(102,45,145,0.22)]"
+    : "!h-4 !w-4 !border-[3px] !border-[#e9e2f7] !bg-[#4e387e] shadow-[0_0_0_4px_rgba(102,45,145,0.16)]";
+
+  const displayLabel = isEditingLabel ? nodeData.label : nodeData.label || "Video";
 
   const handlePickFile = () => {
     inputRef.current?.click();
@@ -208,6 +198,15 @@ const UploadVideoNodeComponent = ({ id, data, selected }: NodeProps) => {
         />
       ) : null}
 
+      {isOutputTooltipOpen ? (
+        <div className="pointer-events-none absolute right-[-268px] top-[150px] z-40">
+          <div className="relative whitespace-nowrap rounded-[18px] bg-white px-4 py-2 text-[13px] font-medium text-[#171717] shadow-[0_16px_40px_rgba(0,0,0,0.25)]">
+            The generated video URL output.
+            <div className="absolute left-[-8px] top-1/2 h-4 w-4 -translate-y-1/2 rotate-45 bg-white" />
+          </div>
+        </div>
+      ) : null}
+
       <NodeHoverRunButton
         nodeId={id}
         onRun={() => runNode(id, true)}
@@ -217,65 +216,132 @@ const UploadVideoNodeComponent = ({ id, data, selected }: NodeProps) => {
       />
 
       <div className={`${containerClass} ${runningGlowClass}`}>
-        <div className={headerClass}>
-          <div>
-            <p className={mutedLabelClass}>Video Input</p>
-            <p className={titleClass}>{nodeData.label || "Upload Video"}</p>
-          </div>
-
-          <NodeMenu onDelete={() => removeNode(id)} />
+        <div className="absolute -top-8 left-0 z-10">
+          <input
+            type="text"
+            value={displayLabel}
+            placeholder="Node Name"
+            className={`nodrag nopan min-w-[64px] bg-transparent text-[14px] font-medium outline-none ${
+              isDark
+                ? "text-zinc-400 placeholder:text-zinc-600"
+                : "text-zinc-600 placeholder:text-zinc-400"
+            }`}
+            onFocus={() => {
+              setIsEditingLabel(true);
+              if ((nodeData.label || "Video") === "Video") {
+                updateNodeData(id, { label: "" });
+              }
+            }}
+            onBlur={() => {
+              setIsEditingLabel(false);
+              if (!nodeData.label.trim()) {
+                updateNodeData(id, { label: "Video" });
+              }
+            }}
+            onChange={(e) => updateNodeData(id, { label: e.target.value })}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === "Enter") {
+                (e.currentTarget as HTMLInputElement).blur();
+              }
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          />
         </div>
 
-        <div className={bodyClass}>
-          <input
-            ref={inputRef}
-            type="file"
-            accept={ACCEPT}
-            onChange={handleFileChange}
-            className="hidden"
-          />
-
-          {!nodeData.videoUrl ? (
-            <button
-              type="button"
-              onClick={handlePickFile}
-              disabled={!!nodeData.isUploading}
-              className={uploadButtonClass}
-            >
-              <div>
-                <p className={uploadTitleClass}>
-                  {nodeData.isUploading ? "Uploading video..." : "Choose video"}
-                </p>
-                <p className={uploadSubtitleClass}>MP4, MOV, WEBM, M4V</p>
-              </div>
-            </button>
-          ) : (
-            <div className="space-y-3">
-              <div className={previewBoxClass}>
-                <video
-                  src={nodeData.videoUrl}
-                  controls
-                  preload="metadata"
-                  className="h-auto max-h-[260px] w-full object-contain"
-                />
-              </div>
-
-              <div className={fileInfoClass}>
-                <p className={fileNameClass}>
-                  {nodeData.fileName || "Uploaded video"}
-                </p>
-                <p className={fileUrlClass}>{nodeData.videoUrl}</p>
-              </div>
-
-              <button
-                type="button"
-                onClick={handlePickFile}
-                className={replaceButtonClass}
-              >
-                Replace video
-              </button>
+        <div className="absolute -top-6 right-0 z-20">
+          <div className="group/info relative">
+            <div>
+              <Info size={14} />
             </div>
-          )}
+
+            <div className="pointer-events-none absolute right-0 top-8 z-30 w-[300px] opacity-0 transition duration-150 group-hover/info:opacity-100">
+              <div className="rounded-[14px] bg-black px-6 py-4 text-white shadow-[0_24px_80px_rgba(0,0,0,0.52)]">
+                <div className="text-[16px] font-medium tracking-[-0.02em]">
+                  Video
+                </div>
+                <p className="mt-2 text-[14px] leading-6 text-white/95">
+                  Upload a video and pass its URL to the next connected node.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className={`px-0 pb-4 pt-0 ${isDark ? "bg-[#1f1f1f]" : "bg-[#f1f1f1]"}`}>
+          <div className={`${outputBoxClass} rounded-none border-x-0 border-t-0`}>
+            <div className="flex min-h-[110px] max-h-[120px] items-start overflow-y-auto break-all pr-1 text-[14px] leading-6">
+              {nodeData.videoUrl ? (
+                <p className={isDark ? "text-zinc-200" : "text-zinc-800"}>
+                  {nodeData.videoUrl}
+                </p>
+              ) : (
+                <p className={outputPlaceholderClass}>
+                  Video node output will appear here...
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="group/output relative flex justify-end">
+            <span
+              className="mr-5 mt-1 cursor-default text-[14px] font-medium text-zinc-500"
+              onMouseEnter={() => setIsOutputTooltipOpen(true)}
+              onMouseLeave={() => setIsOutputTooltipOpen(false)}
+            >
+              Video
+            </span>
+          </div>
+          <div className={bodyClass}>
+            <input
+              ref={inputRef}
+              type="file"
+              accept={ACCEPT}
+              onChange={handleFileChange}
+              className="hidden"
+            />
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 py-2">
+                <span className={rowLabelClass}>Video</span>
+                <button
+                  type="button"
+                  onClick={handlePickFile}
+                  disabled={!!nodeData.isUploading}
+                  className={filePickerClass}
+                >
+                  <span className="truncate">
+                    {nodeData.isUploading
+                      ? "Uploading video..."
+                      : nodeData.fileName || "Add File"}
+                  </span>
+                </button>
+              </div>
+
+              {nodeData.videoUrl ? (
+                <div className={inlinePreviewClass}>
+                  <video
+                    src={nodeData.videoUrl}
+                    controls
+                    preload="metadata"
+                    className="h-auto max-h-[180px] w-full object-contain"
+                  />
+                </div>
+              ) : null}
+
+              {nodeData.videoUrl ? (
+                <button
+                  type="button"
+                  onClick={handlePickFile}
+                  className={replaceButtonClass}
+                >
+                  Replace video
+                </button>
+              ) : (
+                <p className="text-xs text-zinc-500">MP4, MOV, WEBM, M4V</p>
+              )}
+            </div>
+          </div>
         </div>
 
         <Handle
@@ -283,6 +349,7 @@ const UploadVideoNodeComponent = ({ id, data, selected }: NodeProps) => {
           position={Position.Right}
           id="video-url-output"
           className={sourceHandleClass}
+           style={{ top: nodeData.videoUrl ? 169 : 158 }}
         />
       </div>
     </div>

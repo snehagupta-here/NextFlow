@@ -19,9 +19,11 @@ import {
   AlertTriangle,
   ChevronDown,
   History,
+  MousePointer2,
   Moon,
   Play,
   Redo2,
+  Scissors,
   Undo2,
   X,
 } from "lucide-react";
@@ -53,6 +55,9 @@ type CanvasMessage =
   | { type: "success"; text: string }
   | { type: "import-error"; text: string };
 
+type CanvasTool = "select" | "cut";
+type CanvasPoint = { x: number; y: number };
+
 function isWorkflowNodeType(value: string): value is WorkflowNodeType {
   return Object.values(WorkflowNodeType).includes(value as WorkflowNodeType);
 }
@@ -76,6 +81,10 @@ function getImportedEdgePresentation(isDark: boolean) {
       color: stroke,
     },
   };
+}
+
+function distanceBetweenPoints(a: CanvasPoint, b: CanvasPoint) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
 type WorkflowCanvasProps = {
@@ -128,7 +137,14 @@ const WorkflowCanvas = ({
   const [isHistoryMenuOpen, setIsHistoryMenuOpen] = useState(false);
   const [showUndoTooltip, setShowUndoTooltip] = useState(false);
   const [showRedoTooltip, setShowRedoTooltip] = useState(false);
+  const [showCutTooltip, setShowCutTooltip] = useState(false);
   const [isDesktopViewport, setIsDesktopViewport] = useState(false);
+  const [activeCanvasTool, setActiveCanvasTool] = useState<CanvasTool>("select");
+  const [cutPreviewEdgeIds, setCutPreviewEdgeIds] = useState<string[]>([]);
+  const [cutTrailPoints, setCutTrailPoints] = useState<CanvasPoint[]>([]);
+  const [cutCursorPosition, setCutCursorPosition] = useState<CanvasPoint | null>(
+    null
+  );
   const [lastSingleSelectedNodeId, setLastSingleSelectedNodeId] = useState<
     string | null
   >(null);
@@ -141,6 +157,8 @@ const WorkflowCanvas = ({
   const lastSavedSnapshot = useRef("");
   const historyMenuRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  const isCuttingConnectionsRef = useRef(false);
+  const lastCutPointRef = useRef<CanvasPoint | null>(null);
 
   useWorkflowKeyboardDelete(lastSingleSelectedNodeId);
   useWorkflowKeyboardHistory();
@@ -186,6 +204,7 @@ const WorkflowCanvas = ({
     () => nodes.filter((node) => node.selected),
     [nodes]
   );
+  const isCutToolActive = activeCanvasTool === "cut";
   const displayedEdges = useMemo(() => {
     const runningNodeIds = new Set(
       nodes
@@ -195,23 +214,27 @@ const WorkflowCanvas = ({
 
     return edges.map((edge) => {
       const isRunningInputEdge = runningNodeIds.has(edge.target);
+      const isCutPreviewEdge = cutPreviewEdgeIds.includes(edge.id);
+      const edgeClasses = [edge.className];
 
-      if (!isRunningInputEdge) {
-        return edge;
+      if (isRunningInputEdge) {
+        edgeClasses.push(
+          isDark ? "workflow-edge-running-dark" : "workflow-edge-running-light"
+        );
       }
 
-      const runningClassName = isDark
-        ? "workflow-edge-running-dark"
-        : "workflow-edge-running-light";
+      if (isCutPreviewEdge) {
+        edgeClasses.push(
+          isDark ? "workflow-edge-cut-preview-dark" : "workflow-edge-cut-preview-light"
+        );
+      }
 
       return {
         ...edge,
-        className: edge.className
-          ? `${edge.className} ${runningClassName}`
-          : runningClassName,
+        className: edgeClasses.filter(Boolean).join(" "),
       };
     });
-  }, [edges, isDark, nodes]);
+  }, [cutPreviewEdgeIds, edges, isDark, nodes]);
   const leftSidebarCenterOffset = isDesktopViewport
     ? isLeftSidebarCollapsed
       ? 0
@@ -268,6 +291,176 @@ const WorkflowCanvas = ({
       type: draggedType,
       position,
     });
+  };
+
+  const getEdgePathElements = () => {
+    if (!canvasRef.current) return [];
+
+    return Array.from(
+      canvasRef.current.querySelectorAll<SVGGElement>(".react-flow__edge[data-id]")
+    )
+      .map((edgeElement) => {
+        const pathElement = edgeElement.querySelector<SVGPathElement>(
+          ".react-flow__edge-path"
+        );
+
+        if (!pathElement) return null;
+
+        return {
+          id: edgeElement.dataset.id ?? "",
+          pathElement,
+        };
+      })
+      .filter((value): value is { id: string; pathElement: SVGPathElement } =>
+        Boolean(value?.id)
+      );
+  };
+
+  const isPointNearPath = (
+    pathElement: SVGPathElement,
+    point: CanvasPoint,
+    maxDistance: number
+  ) => {
+    const totalLength = pathElement.getTotalLength();
+    const sampleCount = Math.max(16, Math.ceil(totalLength / 18));
+    const screenMatrix = pathElement.getScreenCTM();
+
+    if (!screenMatrix) return false;
+
+    for (let index = 0; index <= sampleCount; index += 1) {
+      const samplePoint = pathElement.getPointAtLength(
+        (totalLength * index) / sampleCount
+      );
+      const screenPoint = new DOMPoint(samplePoint.x, samplePoint.y).matrixTransform(
+        screenMatrix
+      );
+
+      if (
+        distanceBetweenPoints(point, {
+          x: screenPoint.x,
+          y: screenPoint.y,
+        }) <= maxDistance
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  const getNearbyEdgeIds = (point: CanvasPoint, maxDistance = 18) => {
+    const nearbyIds = new Set<string>();
+
+    for (const { id, pathElement } of getEdgePathElements()) {
+      if (isPointNearPath(pathElement, point, maxDistance)) {
+        nearbyIds.add(id);
+      }
+    }
+
+    return nearbyIds;
+  };
+
+  const removeEdgesById = (edgeIds: Set<string>) => {
+    if (edgeIds.size === 0) return;
+
+    const latestEdges = useWorkflowEditorStore.getState().edges;
+    const nextEdges = latestEdges.filter((edge) => !edgeIds.has(edge.id));
+
+    if (nextEdges.length !== latestEdges.length) {
+      setEdges(nextEdges);
+    }
+  };
+
+  const collectCutEdgeIdsAlongSegment = (from: CanvasPoint, to: CanvasPoint) => {
+    const segmentLength = distanceBetweenPoints(from, to);
+    const sampleCount = Math.max(2, Math.ceil(segmentLength / 14));
+    const edgeIds = new Set<string>();
+
+    for (let index = 0; index <= sampleCount; index += 1) {
+      const progress = index / sampleCount;
+      const samplePoint = {
+        x: from.x + (to.x - from.x) * progress,
+        y: from.y + (to.y - from.y) * progress,
+      };
+
+      for (const edgeId of getNearbyEdgeIds(samplePoint, 20)) {
+        edgeIds.add(edgeId);
+      }
+    }
+
+    return edgeIds;
+  };
+
+  const updateCutCursorPosition = (point: CanvasPoint) => {
+    if (!canvasRef.current) return;
+
+    const canvasBounds = canvasRef.current.getBoundingClientRect();
+
+    setCutCursorPosition({
+      x: point.x - canvasBounds.left,
+      y: point.y - canvasBounds.top,
+    });
+  };
+
+  const resetCutModeVisuals = () => {
+    isCuttingConnectionsRef.current = false;
+    lastCutPointRef.current = null;
+    setCutPreviewEdgeIds([]);
+    setCutTrailPoints([]);
+    setCutCursorPosition(null);
+  };
+
+  const handleCutToolPointerMove = (point: CanvasPoint) => {
+    updateCutCursorPosition(point);
+
+    if (!isCuttingConnectionsRef.current) {
+      setCutPreviewEdgeIds(Array.from(getNearbyEdgeIds(point)));
+      return;
+    }
+
+    const previousPoint = lastCutPointRef.current ?? point;
+    const intersectedEdgeIds = collectCutEdgeIdsAlongSegment(previousPoint, point);
+
+    if (intersectedEdgeIds.size > 0) {
+      removeEdgesById(intersectedEdgeIds);
+    }
+
+    setCutPreviewEdgeIds(Array.from(intersectedEdgeIds));
+    setCutTrailPoints((current) => {
+      const nextPoints = [...current, point];
+      return nextPoints.slice(-10);
+    });
+    lastCutPointRef.current = point;
+  };
+
+  const handleCutToolPointerDown = (point: CanvasPoint) => {
+    isCuttingConnectionsRef.current = true;
+    lastCutPointRef.current = point;
+    setCutTrailPoints([point]);
+    setCutPreviewEdgeIds(Array.from(getNearbyEdgeIds(point)));
+    updateCutCursorPosition(point);
+  };
+
+  const handleCanvasPointerDownCapture = (
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
+    if (!isCutToolActive) return;
+
+    handleCutToolPointerDown({ x: event.clientX, y: event.clientY });
+  };
+
+  const handleCanvasPointerMoveCapture = (
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
+    if (!isCutToolActive) return;
+
+    handleCutToolPointerMove({ x: event.clientX, y: event.clientY });
+  };
+
+  const handleCanvasPointerLeave = () => {
+    if (!isCutToolActive || isCuttingConnectionsRef.current) return;
+    setCutPreviewEdgeIds([]);
+    setCutCursorPosition(null);
   };
 
   const handleSelectionChange = useMemo(
@@ -682,8 +875,71 @@ const WorkflowCanvas = ({
     return () => window.removeEventListener("resize", updateViewport);
   }, []);
 
+  useEffect(() => {
+    if (isCutToolActive) return;
+    resetCutModeVisuals();
+  }, [isCutToolActive]);
+
+  useEffect(() => {
+    if (!isCutToolActive) return;
+
+    const isPointInsideCanvas = (point: CanvasPoint) => {
+      const bounds = canvasRef.current?.getBoundingClientRect();
+      if (!bounds) return false;
+
+      return (
+        point.x >= bounds.left &&
+        point.x <= bounds.right &&
+        point.y >= bounds.top &&
+        point.y <= bounds.bottom
+      );
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const point = { x: event.clientX, y: event.clientY };
+
+      if (!isPointInsideCanvas(point)) {
+        if (!isCuttingConnectionsRef.current) {
+          setCutPreviewEdgeIds([]);
+          setCutCursorPosition(null);
+        }
+        return;
+      }
+
+      handleCutToolPointerMove(point);
+    };
+
+    const handlePointerUp = () => {
+      isCuttingConnectionsRef.current = false;
+      lastCutPointRef.current = null;
+      setCutTrailPoints([]);
+      setCutPreviewEdgeIds([]);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setActiveCanvasTool("select");
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isCutToolActive]);
+
   return (
-    <div ref={canvasRef} className={ui.canvasClass}>
+    <div
+      ref={canvasRef}
+      className={ui.canvasClass}
+      onPointerDownCapture={handleCanvasPointerDownCapture}
+      onPointerMoveCapture={handleCanvasPointerMoveCapture}
+      onPointerLeave={handleCanvasPointerLeave}
+    >
       {canvasMessage?.type === "success" ? (
         <div className="absolute bottom-5 right-5 z-20 w-full max-w-[360px] px-4">
           <div className="rounded-[16px] border border-emerald-500/20 bg-[#102116] px-4 py-3 text-[13px] font-medium text-emerald-300 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
@@ -753,7 +1009,9 @@ const WorkflowCanvas = ({
         minZoom={0.1}
         className={ui.flowClass}
         deleteKeyCode={["Delete", "Backspace"]}
-        elementsSelectable
+        elementsSelectable={!isCutToolActive}
+        nodesDraggable={!isCutToolActive}
+        nodesConnectable={!isCutToolActive}
         selectionOnDrag
         selectionMode={SelectionMode.Partial}
         multiSelectionKeyCode={["Meta", "Control"]}
@@ -761,7 +1019,7 @@ const WorkflowCanvas = ({
         onSelectionChange={handleSelectionChange.onChange}
         zoomOnScroll={!isCanvasLocked}
         panOnScroll={!isCanvasLocked}
-        panOnDrag={isCanvasLocked ? false : [1]}
+        panOnDrag={isCanvasLocked || isCutToolActive ? false : [1]}
         zoomOnPinch={!isCanvasLocked}
         zoomOnDoubleClick={!isCanvasLocked}
         onDragOver={handleDragOver}
@@ -936,7 +1194,7 @@ const WorkflowCanvas = ({
         </Panel>
 
         <Panel position="bottom-left">
-          <div className=" flex items-center gap-2.5 max-[860px]:flex-col">
+          <div className="flex items-center gap-2.5 max-[860px]:flex-col">
             <div className="relative">
               {showUndoTooltip ? (
                 <div className="pointer-events-none absolute bottom-[calc(100%+12px)] left-1/2 z-[999] -translate-x-1/2">
@@ -994,6 +1252,23 @@ const WorkflowCanvas = ({
                 <Redo2 size={15} />
               </button>
             </div>
+
+            <div className="relative">
+              {showCutTooltip ? (
+                <div className="pointer-events-none absolute bottom-[calc(100%+12px)] left-1/2 z-[999] -translate-x-1/2">
+                  <div className={tooltipBubbleClass}>
+                    {isCutToolActive ? "Cut Mode Active" : "Cut Connections"}
+                    <div
+                      className={`absolute top-full left-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1 rotate-45 ${
+                        isDark ? "bg-white" : "bg-black"
+                      }`}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+         
+            </div>
           </div>
         </Panel>
 
@@ -1006,6 +1281,41 @@ const WorkflowCanvas = ({
           className={ui.minimapClass}
         />
       </ReactFlow>
+
+      {isCutToolActive ? (
+        <>
+          {cutTrailPoints.length > 1 ? (
+            <svg className="pointer-events-none absolute inset-0 z-20 h-full w-full overflow-visible">
+              <polyline
+                points={cutTrailPoints.map((point) => `${point.x},${point.y}`).join(" ")}
+                className={
+                  isDark ? "workflow-cut-trail-dark" : "workflow-cut-trail-light"
+                }
+              />
+            </svg>
+          ) : null}
+
+          {cutCursorPosition ? (
+            <div
+              className="pointer-events-none absolute z-30 -translate-x-1/2 -translate-y-1/2"
+              style={{
+                left: cutCursorPosition.x,
+                top: cutCursorPosition.y,
+              }}
+            >
+              <div
+                className={`flex h-9 w-9 items-center justify-center rounded-full border shadow-[0_18px_40px_rgba(0,0,0,0.35)] backdrop-blur ${
+                  isDark
+                    ? "border-white/12 bg-[#111111]/92 text-white"
+                    : "border-black/10 bg-white/95 text-zinc-900"
+                }`}
+              >
+                <Scissors size={16} />
+              </div>
+            </div>
+          ) : null}
+        </>
+      ) : null}
 
       {nodes.length === 0 ? (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">

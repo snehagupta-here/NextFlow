@@ -251,6 +251,51 @@ const FlowStyles = ({ isDark }: FlowStylesProps) => {
         fill: rgba(59, 130, 246, 0.94);
       }
 
+      @keyframes workflow-edge-cut-pulse {
+        0%,
+        100% {
+          stroke-dashoffset: 0;
+          filter:
+            drop-shadow(0 0 6px rgba(242, 95, 92, 0.2))
+            drop-shadow(0 0 14px rgba(242, 95, 92, 0.12));
+        }
+
+        50% {
+          stroke-dashoffset: -18;
+          filter:
+            drop-shadow(0 0 10px rgba(242, 95, 92, 0.34))
+            drop-shadow(0 0 22px rgba(242, 95, 92, 0.18));
+        }
+      }
+
+      .workflow-edge-cut-preview-dark .react-flow__edge-path,
+      .workflow-edge-cut-preview-light .react-flow__edge-path {
+        stroke: #f25f5c !important;
+        stroke-width: 2.8px !important;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 12 10;
+        animation: workflow-edge-cut-pulse 0.7s linear infinite;
+      }
+
+      .workflow-edge-cut-preview-dark .react-flow__arrowhead path,
+      .workflow-edge-cut-preview-light .react-flow__arrowhead path {
+        fill: #f25f5c !important;
+      }
+
+      .workflow-cut-trail-dark,
+      .workflow-cut-trail-light {
+        fill: none;
+        stroke: #f25f5c;
+        stroke-width: 2.5px;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 10 10;
+        filter:
+          drop-shadow(0 0 8px rgba(242, 95, 92, 0.3))
+          drop-shadow(0 0 18px rgba(242, 95, 92, 0.14));
+      }
+
       @keyframes workflow-selection-border-move {
         from {
           background-position:
