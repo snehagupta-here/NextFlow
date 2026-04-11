@@ -45,7 +45,7 @@ import { useWorkflowHistory } from "@/hooks/workflow/useWorkFlowHistory";
 import { useWorkflowExecution } from "@/hooks/workflow/useWorkFlowExecution";
 import { useWorkflowEditorStore } from "@/stores/workflow-editor.store";
 import { WorkflowNodeType } from "@/types/workflow";
-import FlowControls from "./FlowControls";
+import FlowControls, { WorkflowNameControl } from "./FlowControls";
 import FlowStyles from "./FlowStyles";
 import ImportExportControls from "./ImportExportControls";
 
@@ -110,19 +110,20 @@ const WorkflowCanvas = ({
     useWorkflowGraph();
   const { addNode } = useWorkflowActions();
   const replaceWorkflow = useWorkflowEditorStore((state) => state.replaceWorkflow);
+  const resetWorkflow = useWorkflowEditorStore((state) => state.resetWorkflow);
   const currentWorkflowId = useWorkflowEditorStore(
     (state) => state.currentWorkflowId
   );
-  const setNodes = useWorkflowEditorStore((state) => state.setNodes);
-  const setEdges = useWorkflowEditorStore((state) => state.setEdges);
   const currentWorkflowName = useWorkflowEditorStore(
     (state) => state.currentWorkflowName
   );
-  const setCurrentWorkflowId = useWorkflowEditorStore(
-    (state) => state.setCurrentWorkflowId
-  );
+  const setNodes = useWorkflowEditorStore((state) => state.setNodes);
+  const setEdges = useWorkflowEditorStore((state) => state.setEdges);
   const setCurrentWorkflowName = useWorkflowEditorStore(
     (state) => state.setCurrentWorkflowName
+  );
+  const setCurrentWorkflowId = useWorkflowEditorStore(
+    (state) => state.setCurrentWorkflowId
   );
   const { isValidConnection } = useWorkflowValidation();
   const { undo, redo, canUndo, canRedo } = useWorkflowHistory();
@@ -263,6 +264,14 @@ const WorkflowCanvas = ({
     router.push(
       `/sign-up?redirect_url=${encodeURIComponent(pathname || "/nodes/new")}`
     );
+  };
+
+  const handleCreateNewWorkflow = () => {
+    resetWorkflow();
+    hasInitializedAutosave.current = false;
+    isCreatingDraftWorkflow.current = false;
+    lastSavedSnapshot.current = "";
+    setCanvasMessage(null);
   };
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
@@ -1036,24 +1045,35 @@ const WorkflowCanvas = ({
         />
 
         <Panel position="top-left">
+          <WorkflowNameControl
+            workflowName={currentWorkflowName}
+            onWorkflowNameChange={setCurrentWorkflowName}
+          />
+        </Panel>
+
+        <Panel
+          position="top-left"
+          style={{
+            left: "50%",
+            transform: "translateX(-50%)",
+          }}
+        >
           <FlowControls
             isDark={isDark}
             isCanvasLocked={isCanvasLocked}
             isSaving={isSaving}
-            workflowName={currentWorkflowName}
-            onWorkflowNameChange={setCurrentWorkflowName}
+            isNewWorkflowDisabled={nodes.length === 0 && edges.length === 0}
+            onCreateNewWorkflow={handleCreateNewWorkflow}
             onRunAll={() => runAll(true)}
             onSaveWorkflow={handleSaveWorkflow}
             onToggleCanvasLock={() => setIsCanvasLocked((prev) => !prev)}
           >
-            {({ closeMenu }) => (
-              <ImportExportControls
-                isDark={isDark}
-                onExportJson={handleExportJson}
-                onImportJson={handleImportJson}
-                onRequestClose={closeMenu}
-              />
-            )}
+            <ImportExportControls
+              isDark={isDark}
+              iconOnly
+              onExportJson={handleExportJson}
+              onImportJson={handleImportJson}
+            />
           </FlowControls>
         </Panel>
 

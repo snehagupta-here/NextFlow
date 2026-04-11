@@ -1,96 +1,44 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import {
-  ChevronDown,
-  Lock,
-  Unlock,
-  Save,
-  Play,
-  ChevronLeft,
-} from "lucide-react";
+import { Lock, Unlock, Save, Play, Plus } from "lucide-react";
 
 type FlowControlsProps = {
   isDark: boolean;
   isCanvasLocked: boolean;
   isSaving: boolean;
-  workflowName: string;
-  onWorkflowNameChange: (name: string) => void;
-  children?:
-    | React.ReactNode
-    | ((helpers: { closeMenu: () => void }) => React.ReactNode);
-
+  isNewWorkflowDisabled: boolean;
+  children?: React.ReactNode;
+  onCreateNewWorkflow: () => void;
   onRunAll: () => void | Promise<void>;
   onSaveWorkflow: () => void | Promise<void>;
   onToggleCanvasLock: () => void;
 };
 
-const FlowControls = ({
-  isDark,
-  isCanvasLocked,
-  isSaving,
+type WorkflowNameControlProps = {
+  workflowName: string;
+  onWorkflowNameChange: (name: string) => void;
+};
+
+export const WorkflowNameControl = ({
   workflowName,
   onWorkflowNameChange,
-  onRunAll,
-  onSaveWorkflow,
-  onToggleCanvasLock,
-  children,
-}: FlowControlsProps) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+}: WorkflowNameControlProps) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [draftWorkflowName, setDraftWorkflowName] = useState(workflowName);
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const workflowNameInputRef = useRef<HTMLInputElement | null>(null);
-
-  const pillButtonClass = `inline-flex h-10 w-full cursor-pointer items-center gap-3 rounded-lg px-4 text-[12px] font-medium transition ${
-    isDark
-      ? "bg-transparent text-zinc-100 hover:bg-[#141414]"
-      : "bg-transparent text-zinc-900 hover:bg-zinc-100"
-  }`;
-
-  const menuTriggerClass = `inline-flex h-12 items-center gap-2 rounded-xl px-3 text-sm font-medium transition shadow-xl backdrop-blur ${
-    isDark
-      ? "border-white/10 bg-[#202020] text-zinc-100"
-      : "border border-black/10 bg-[#f3f3f3] text-zinc-900 shadow-[0_0_0_1px_rgba(0,0,0,0.03),0_10px_30px_rgba(0,0,0,0.10)]"
-  }`;
-  const workflowNameButtonClass = isDark
-    ? "inline-flex h-6 max-w-[220px] items-center rounded-lg px-2 text-sm leading-none font-medium text-zinc-100 transition hover:bg-[#383838]"
-    : "inline-flex h-6 max-w-[220px] items-center rounded-lg px-2 text-sm leading-none font-medium text-zinc-900 transition hover:bg-zinc-200/80";
-  const workflowNameInputClass = isDark
-    ? "h-6 w-[220px] rounded-lg border border-[0.5px] border-white/35 bg-transparent px-2 py-1 text-sm leading-none font-medium text-zinc-100 outline-none placeholder:text-zinc-500"
-    : "h-6 w-[220px] rounded-lg border border-[0.5px] border-black/30 bg-transparent px-2 py-0 text-sm leading-none font-medium text-zinc-900 outline-none placeholder:text-zinc-400";
-
-  const disabledClass = "disabled:cursor-not-allowed disabled:opacity-50";
-
-  const handleAction = (callback: () => void | Promise<void>) => async () => {
-    setIsMenuOpen(false);
-    await callback();
-  };
-
-  const handleGoBack = () => {
-    setIsMenuOpen(false);
-    window.history.back();
-  };
+  const nameButtonClass =
+    "inline-flex h-11 w-[min(72vw,200px)] items-center justify-center rounded-[12px] bg-[#202020] px-4 text-sm font-medium text-zinc-100 shadow-[0_18px_45px_rgba(0,0,0,0.28)] transition hover:bg-[#2a2a2a]";
+  const nameInputClass =
+    "h-11 w-[min(72vw,200px)] rounded-[12px] bg-[#202020] px-4 text-center text-sm font-medium text-zinc-100 outline-none shadow-[0_18px_45px_rgba(0,0,0,0.28)] placeholder:text-zinc-500";
 
   const commitWorkflowName = () => {
     const trimmedName = draftWorkflowName.trim();
-    onWorkflowNameChange(trimmedName || "Untitled");
-    setDraftWorkflowName(trimmedName);
+    const nextName = trimmedName || "Untitled";
+    onWorkflowNameChange(nextName);
+    setDraftWorkflowName(nextName);
     setIsEditingName(false);
   };
-
-  useEffect(() => {
-    if (!isMenuOpen) return;
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!containerRef.current) return;
-      if (containerRef.current.contains(event.target as Node)) return;
-      setIsMenuOpen(false);
-    };
-
-    window.addEventListener("mousedown", handlePointerDown);
-    return () => window.removeEventListener("mousedown", handlePointerDown);
-  }, [isMenuOpen]);
 
   useEffect(() => {
     if (isEditingName) return;
@@ -103,104 +51,159 @@ const FlowControls = ({
     workflowNameInputRef.current?.select();
   }, [isEditingName]);
 
-  const closeMenu = () => setIsMenuOpen(false);
+  if (isEditingName) {
+    return (
+      <input
+        ref={workflowNameInputRef}
+        value={draftWorkflowName}
+        onChange={(event) => setDraftWorkflowName(event.target.value)}
+        onBlur={commitWorkflowName}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            commitWorkflowName();
+          }
+
+          if (event.key === "Escape") {
+            setDraftWorkflowName(workflowName);
+            setIsEditingName(false);
+          }
+        }}
+        placeholder="Untitled"
+        className={nameInputClass}
+      />
+    );
+  }
 
   return (
-    <div className="flex items-center gap-3" ref={containerRef}>
-      <div className="relative">
-        <div className={menuTriggerClass}>
-          <button
-            type="button"
-            onClick={() => setIsMenuOpen((prev) => !prev)}
-            className="inline-flex h-8 w-7 cursor-pointer items-center justify-center rounded-lg transition hover:bg-black/10 dark:hover:bg-white/10"
-            aria-label="Open workflow actions"
-            title="Open workflow actions"
-          >
-            <ChevronDown
-              size={16}
-              className={`transition-transform ${isMenuOpen ? "rotate-180" : ""}`}
-            />
-          </button>
+    <button
+      type="button"
+      onClick={() => setIsEditingName(true)}
+      className={nameButtonClass}
+      title={workflowName}
+    >
+      <span className="truncate">{workflowName}</span>
+    </button>
+  );
+};
 
-          {isEditingName ? (
-            <input
-              ref={workflowNameInputRef}
-              value={draftWorkflowName}
-              onChange={(event) => setDraftWorkflowName(event.target.value)}
-              onBlur={commitWorkflowName}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  commitWorkflowName();
-                }
+const FlowControls = ({
+  isDark,
+  isCanvasLocked,
+  isSaving,
+  isNewWorkflowDisabled,
+  onCreateNewWorkflow,
+  onRunAll,
+  onSaveWorkflow,
+  onToggleCanvasLock,
+  children,
+}: FlowControlsProps) => {
+  const railClass = isDark
+    ? "bg-[#202020] text-zinc-100 shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+    : "bg-[#202020] text-zinc-100 shadow-[0_18px_60px_rgba(0,0,0,0.22)]";
+  const iconButtonClass = `flex h-10 w-10 items-center justify-center rounded-xl transition ${
+    isDark
+      ? "text-zinc-100 hover:bg-white/[0.1]"
+      : "text-zinc-100 hover:bg-white/10"
+  }`;
+  const saveButtonClass = `flex h-10 w-10 items-center justify-center rounded-xl transition ${
+    isDark
+      ? "text-emerald-100 hover:bg-emerald-500/22"
+      : "text-emerald-300 hover:bg-emerald-500/20"
+  }`;
+  const primaryButtonClass =
+    `flex h-10 w-10 items-center justify-center rounded-xl transition ${
+      isDark
+        ? "text-zinc-100 hover:bg-white/[0.1]"
+        : "text-zinc-100 hover:bg-white/10"
+    }`;
 
-                if (event.key === "Escape") {
-                  setDraftWorkflowName(workflowName);
-                  setIsEditingName(false);
-                }
-              }}
-              placeholder="My Workflow"
-              className={workflowNameInputClass}
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsEditingName(true)}
-              className={workflowNameButtonClass}
-              title={workflowName}
-            >
-              <span className="truncate">{workflowName}</span>
-            </button>
-          )}
-        </div>
+  const disabledClass = "disabled:cursor-not-allowed disabled:opacity-50";
 
-        {isMenuOpen ? (
-          <div
-            className={`absolute left-0 top-14 z-50 flex min-w-[240px] flex-col gap-1 rounded-2xl border border-[0.5px] p-2 shadow-[0_20px_60px_rgba(0,0,0,0.35)] ${
-              isDark
-                ? "border-white/10 bg-[#202020]"
-                : "border-zinc-200 bg-white"
-            }`}
-          >
-            <button
-              type="button"
-              onClick={handleGoBack}
-              className={pillButtonClass}
-            >
-              <ChevronLeft size={14} />
-              Back
-            </button>
+  return (
+    <div className={`flex w-fit items-center gap-1 rounded-[14px] px-2 py-1.5 backdrop-blur-xl ${railClass}`}>
+      <ActionIcon
+        label="New Workflow"
+        isDark={isDark}
+        className={`${primaryButtonClass} ${disabledClass}`}
+        disabled={isNewWorkflowDisabled}
+        onClick={onCreateNewWorkflow}
+      >
+        <Plus size={18} />
+      </ActionIcon>
 
-            {typeof children === "function" ? children({ closeMenu }) : children}
+      {children}
 
-            <button
-              type="button"
-              onClick={handleAction(() => onRunAll())}
-              className={pillButtonClass}
-            >
-              <Play size={14} />
-              Run All
-            </button>
+      <ActionIcon
+        label="Run All"
+        isDark={isDark}
+        className={iconButtonClass}
+        onClick={() => onRunAll()}
+      >
+        <Play size={18} />
+      </ActionIcon>
 
-            <button
-              type="button"
-              onClick={handleAction(() => onSaveWorkflow())}
-              disabled={isSaving}
-              className={`${pillButtonClass} ${disabledClass}`}
-            >
-              <Save size={14} />
-              {isSaving ? "Saving..." : "Save Workflow"}
-            </button>
+      <ActionIcon
+        label={isSaving ? "Saving..." : "Save Workflow"}
+        isDark={isDark}
+        className={`${saveButtonClass} ${disabledClass}`}
+        disabled={isSaving}
+        onClick={() => onSaveWorkflow()}
+      >
+        <Save size={18} />
+      </ActionIcon>
 
-            <button
-              type="button"
-              onClick={handleAction(onToggleCanvasLock)}
-              className={pillButtonClass}
-            >
-              {isCanvasLocked ? <Lock size={14} /> : <Unlock size={14} />}
-              {isCanvasLocked ? "Locked" : "Unlocked"}
-            </button>
-          </div>
-        ) : null}
+      <ActionIcon
+        label={isCanvasLocked ? "Unlock Canvas" : "Lock Canvas"}
+        isDark={isDark}
+        className={iconButtonClass}
+        onClick={onToggleCanvasLock}
+      >
+        {isCanvasLocked ? <Lock size={18} /> : <Unlock size={18} />}
+      </ActionIcon>
+    </div>
+  );
+};
+
+type ActionIconProps = {
+  label: string;
+  isDark: boolean;
+  className: string;
+  disabled?: boolean;
+  children: React.ReactNode;
+  onClick: () => void | Promise<void>;
+};
+
+const ActionIcon = ({
+  label,
+  isDark,
+  className,
+  disabled = false,
+  children,
+  onClick,
+}: ActionIconProps) => {
+  const tooltipClass =
+    "border-black/10 bg-white text-black shadow-[0_12px_32px_rgba(0,0,0,0.16)]";
+
+  return (
+    <div className="group relative">
+      <button
+        type="button"
+        onClick={() => {
+          void onClick();
+        }}
+        disabled={disabled}
+        className={className}
+        aria-label={label}
+        title={label}
+      >
+        {children}
+      </button>
+
+      <div
+        className={`pointer-events-none absolute left-1/2 top-full z-20 mt-2 hidden -translate-x-1/2 whitespace-nowrap rounded-xl border px-3 py-1.5 text-[12px] font-medium opacity-0 transition duration-200 group-hover:opacity-100 md:block ${tooltipClass}`}
+      >
+        <div className="absolute bottom-full left-1/2 h-2 w-2 -translate-x-1/2 translate-y-1 rotate-45 border-l border-t border-black/10 bg-white" />
+        {label}
       </div>
     </div>
   );
