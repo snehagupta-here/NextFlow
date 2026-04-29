@@ -24,8 +24,11 @@ import {
   Play,
   Redo2,
   Scissors,
+  Scan,
   Undo2,
   X,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import "@xyflow/react/dist/style.css";
 import { usePathname, useRouter } from "next/navigation";
@@ -129,7 +132,7 @@ const WorkflowCanvas = ({
   const { undo, redo, canUndo, canRedo } = useWorkflowHistory();
   const { runSelected, runAll } = useWorkflowExecution(workflowId);
   const viewport = useViewport();
-  const { screenToFlowPosition, fitView } = useReactFlow();
+  const { screenToFlowPosition, fitView, zoomIn, zoomOut } = useReactFlow();
 
   const [isCanvasLocked, setIsCanvasLocked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -182,6 +185,10 @@ const WorkflowCanvas = ({
       ? "border-white/10 bg-[#1c1c1c] text-white hover:bg-[#2a2a2a]"
       : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 shadow-[0_10px_30px_rgba(0,0,0,0.10)]"
   }`;
+  const canvasZoomPanelClass = isDark
+    ? " bg-[#1c1c1c]/90 text-white"
+    : " bg-white/90 text-zinc-900 shadow-[0_0_0_1px_rgba(0,0,0,0.03),0_10px_30px_rgba(0,0,0,0.10)]";
+  const canvasZoomButtonClass = `${topBarButtonClass} bg-transparent w-10 justify-center px-0 disabled:pointer-events-none disabled:opacity-50`;
 
   const segmentedHistoryClass = isDark
     ? "overflow-hidden rounded-[11px] border border-[0.5px] border-white/10 bg-[#202020] shadow-xl backdrop-blur"
@@ -1043,6 +1050,45 @@ const WorkflowCanvas = ({
           color={isDark ? "#3a3a3a" : "#7d7d88"}
           className={ui.flowClass}
         />
+
+        <Panel position="bottom-center" className="z-[80] !m-0 !mb-4">
+          <div
+            className={`flex items-center gap-1 rounded-2xl p-1 shadow-xl backdrop-blur ${canvasZoomPanelClass}`}
+          >
+            <button
+              type="button"
+              className={canvasZoomButtonClass}
+              onClick={() => zoomOut({ duration: 150 })}
+              disabled={isCanvasLocked}
+              aria-label="Zoom out"
+              title={isCanvasLocked ? "Canvas locked" : "Zoom out"}
+            >
+              <ZoomOut size={16} />
+            </button>
+
+            <button
+              type="button"
+              className={canvasZoomButtonClass}
+              onClick={() => zoomIn({ duration: 150 })}
+              disabled={isCanvasLocked}
+              aria-label="Zoom in"
+              title={isCanvasLocked ? "Canvas locked" : "Zoom in"}
+            >
+              <ZoomIn size={16} />
+            </button>
+
+            <button
+              type="button"
+              className={canvasZoomButtonClass}
+              onClick={() => void fitView({ duration: 250, padding: 0.2 })}
+              disabled={isCanvasLocked}
+              aria-label="Fit view"
+              title={isCanvasLocked ? "Canvas locked" : "Fit view"}
+            >
+              <Scan size={16} />
+            </button>
+          </div>
+        </Panel>
 
         <Panel position="top-left">
           <WorkflowNameControl
