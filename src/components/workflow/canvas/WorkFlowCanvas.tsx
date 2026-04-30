@@ -1041,6 +1041,16 @@ const WorkflowCanvas = ({
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         onNodeClick={(_, node) => setLastSingleSelectedNodeId(node.id)}
+        onEdgeClick={(event) => {
+          setLastSingleSelectedNodeId(null);
+          if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+          setNodes(
+            nodes.map((node) => ({
+              ...node,
+              selected: false,
+            }))
+          );
+        }}
         onPaneClick={() => setLastSingleSelectedNodeId(null)}
       >
         <Background
